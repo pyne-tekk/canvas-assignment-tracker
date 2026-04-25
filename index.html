@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canvas Puller</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080808;
+    --surface: #0f0f0f;
+    --border: #1a1a1a;
+    --border-hover: #2a2a2a;
+    --text: #e8e8e8;
+    --muted: #444;
+    --dim: #222;
+    --accent: #c8f542;
+    --red: #ff4444;
+    --orange: #ff9933;
+    --green: #55e088;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    padding: 40px 24px;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; }
+
+  .header {
+    margin-bottom: 40px;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .tagline {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s;
+    flex: 1;
+    min-width: 180px;
+  }
+
+  input::placeholder { color: var(--muted); }
+  input:focus { border-color: var(--accent); }
+
+  .pull-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .pull-btn:hover { opacity: 0.88; }
+  .pull-btn:active { transform: scale(0.98); }
+  .pull-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .help-text {
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .help-text a { color: #555; }
+
+  #status {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    letter-spacing: 0.06em;
+    min-height: 18px;
+  }
+
+  #status.error { color: var(--red); }
+  #status.success { color: var(--green); }
+  #status.loading { color: var(--accent); }
+
+  .stats-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 18px;
+    flex: 1;
+    min-width: 100px;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-num.red { color: var(--red); }
+  .stat-num.orange { color: var(--orange); }
+  .stat-num.accent { color: var(--accent); }
+
+  .stat-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+
+  .filter-btn:hover { border-color: var(--border-hover); color: var(--text); }
+  .filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(200,245,66,0.05); }
+
+  .assignment-list { display: flex; flex-direction: column; gap: 4px; }
+
+  .assignment-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 3px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .assignment-item:hover {
+    border-color: var(--border-hover);
+    background: #111;
+  }
+
+  .accent-bar { border-radius: 2px; height: 100%; min-height: 36px; }
+  .bar-missing { background: var(--red); }
+  .bar-soon { background: var(--orange); }
+  .bar-ok { background: var(--border); }
+
+  .assign-name {
+    font-size: 12px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+
+  .assign-course {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .assign-meta { text-align: right; }
+
+  .assign-due {
+    font-size: 10px;
+    color: #555;
+    margin-bottom: 3px;
+    white-space: nowrap;
+  }
+
+  .assign-pts {
+    font-size: 10px;
+    color: var(--dim);
+    white-space: nowrap;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-top: 3px;
+  }
+
+  .badge-missing { background: rgba(255,68,68,0.12); color: var(--red); }
+  .badge-soon { background: rgba(255,153,51,0.12); color: var(--orange); }
+
+  .empty {
+    text-align: center;
+    padding: 48px;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeIn { to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="logo">canvas<span>.</span>pull</div>
+    <div class="tagline">Assignment intelligence for students</div>
+  </div>
+
+  <div class="card">
+    <div class="input-group">
+      <input id="domain" type="text" placeholder="school.instructure.com" autocomplete="off" />
+      <input id="token" type="password" placeholder="Canvas API token" autocomplete="off" />
+      <button class="pull-btn" id="pullBtn" onclick="pull()">Pull</button>
+    </div>
+    <div class="help-text">
+      Get your token: Canvas &rarr; Account &rarr; Settings &rarr; Approved Integrations &rarr; New Access Token
+    </div>
+  </div>
+
+  <div id="status"></div>
+  <div id="statsRow"></div>
+  <div id="filterRow"></div>
+  <div id="output"></div>
+
+</div>
+
+<script>
+  let allAssignments = [];
+  let activeFilter = 'all';
+
+  async function pull() {
+    const domain = document.getElementById('domain').value.trim().replace('https://', '').replace(/\/$/, '');
+    const token = document.getElementById('token').value.trim();
+    const btn = document.getElementById('pullBtn');
+    const status = document.getElementById('status');
+
+    if (!domain || !token) {
+      setStatus('error', 'Domain and token required.');
+      return;
+    }
+
+    btn.disabled = true;
+    setStatus('loading', '<span class="spinner"></span>Connecting to Canvas...');
+    document.getElementById('statsRow').innerHTML = '';
+    document.getElementById('filterRow').innerHTML = '';
+    document.getElementById('output').innerHTML = '';
+
+    try {
+      const res = await fetch('/api/assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain, token })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setStatus('error', data.error || 'Unknown error');
+        btn.disabled = false;
+        return;
+      }
+
+      allAssignments = data.assignments;
+      const missing = allAssignments.filter(a => a.missing).length;
+      const soon = allAssignments.filter(a => a.due_soon && !a.missing).length;
+
+      setStatus('success', `Pulled ${allAssignments.length} assignments across ${data.course_count} courses.`);
+      renderStats(allAssignments.length, missing, soon);
+      renderFilters();
+      renderList('all');
+
+    } catch(e) {
+      setStatus('error', 'Could not reach backend. Is main.py running?');
+    }
+
+    btn.disabled = false;
+  }
+
+  function setStatus(type, msg) {
+    const el = document.getElementById('status');
+    el.className = type;
+    el.innerHTML = msg;
+  }
+
+  function renderStats(total, missing, soon) {
+    document.getElementById('statsRow').innerHTML = `
+      <div class="stats-row fade-in">
+        <div class="stat"><div class="stat-num">${total}</div><div class="stat-label">Total</div></div>
+        <div class="stat"><div class="stat-num red">${missing}</div><div class="stat-label">Missing</div></div>
+        <div class="stat"><div class="stat-num orange">${soon}</div><div class="stat-label">Due Soon</div></div>
+        <div class="stat"><div class="stat-num accent">${total - missing - soon}</div><div class="stat-label">Upcoming</div></div>
+      </div>`;
+  }
+
+  function renderFilters() {
+    document.getElementById('filterRow').innerHTML = `
+      <div class="filter-row fade-in">
+        <button class="filter-btn active" onclick="renderList('all')" id="f-all">All</button>
+        <button class="filter-btn" onclick="renderList('missing')" id="f-missing">Missing</button>
+        <button class="filter-btn" onclick="renderList('soon')" id="f-soon">Due Soon</button>
+        <button class="filter-btn" onclick="renderList('upcoming')" id="f-upcoming">Upcoming</button>
+      </div>`;
+  }
+
+  function renderList(filter) {
+    activeFilter = filter;
+    ['all','missing','soon','upcoming'].forEach(f => {
+      const el = document.getElementById(`f-${f}`);
+      if (el) el.className = 'filter-btn' + (f === filter ? ' active' : '');
+    });
+
+    let list = allAssignments;
+    if (filter === 'missing') list = allAssignments.filter(a => a.missing);
+    if (filter === 'soon') list = allAssignments.filter(a => a.due_soon && !a.missing);
+    if (filter === 'upcoming') list = allAssignments.filter(a => !a.missing && !a.due_soon);
+
+    const output = document.getElementById('output');
+
+    if (list.length === 0) {
+      output.innerHTML = '<div class="empty fade-in">Nothing here.</div>';
+      return;
+    }
+
+    output.innerHTML = `<div class="assignment-list fade-in">${list.map(a => `
+      <a class="assignment-item" href="${a.url}" target="_blank">
+        <div class="accent-bar ${a.missing ? 'bar-missing' : a.due_soon ? 'bar-soon' : 'bar-ok'}"></div>
+        <div>
+          <div class="assign-name">${a.name}</div>
+          <div class="assign-course">${a.course}</div>
+          ${a.missing ? '<span class="badge badge-missing">Missing</span>' : a.due_soon ? '<span class="badge badge-soon">Due Soon</span>' : ''}
+        </div>
+        <div class="assign-meta">
+          <div class="assign-due">${a.due || 'No due date'}</div>
+          <div class="assign-pts">${a.points !== null && a.points !== undefined ? a.points + ' pts' : ''}</div>
+        </div>
+      </a>`).join('')}</div>`;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') pull();
+  });
+</script>
+</body>
+</html>
