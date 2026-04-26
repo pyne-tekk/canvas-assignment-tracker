@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canvas Puller</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080808;
+    --surface: #0f0f0f;
+    --surface2: #141414;
+    --border: #222;
+    --border-hover: #333;
+    --text: #f0f0f0;
+    --muted: #aaa;
+    --dim: #888;
+    --accent: #c8f542;
+    --red: #ff4444;
+    --orange: #ff9933;
+    --green: #55e088;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+  }
+
+  #loginScreen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .login-box { width: 100%; max-width: 420px; }
+
+  .login-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 36px;
+    letter-spacing: -0.03em;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .login-logo span { color: var(--accent); }
+
+  .login-tagline {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+  }
+
+  .login-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .login-field { margin-bottom: 16px; }
+
+  .login-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 13px 16px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .login-input::placeholder { color: #444; }
+  .login-input:focus { border-color: var(--accent); }
+
+  .login-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    padding: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: opacity 0.2s, transform 0.1s;
+    margin-top: 8px;
+  }
+
+  .login-btn:hover { opacity: 0.88; }
+  .login-btn:active { transform: scale(0.99); }
+  .login-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .login-help {
+    font-size: 10px;
+    color: #888;
+    margin-top: 16px;
+    line-height: 1.9;
+  }
+
+  .login-help strong { color: var(--text); }
+
+  #loginStatus {
+    font-size: 11px;
+    margin-top: 12px;
+    min-height: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  #loginStatus.error { color: var(--red); }
+  #loginStatus.loading { color: var(--accent); }
+
+  #dashboard {
+    display: none;
+    padding: 32px 24px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .dash-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .dash-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+
+  .dash-logo span { color: var(--accent); }
+  .dash-meta { font-size: 11px; color: var(--muted); margin-top: 3px; letter-spacing: 0.04em; }
+
+  .logout-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+
+  .logout-btn:hover { border-color: var(--border-hover); color: var(--text); }
+
+  .stats-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 20px;
+    flex: 1;
+    min-width: 90px;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 30px;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 5px;
+  }
+
+  .stat-num.red { color: var(--red); }
+  .stat-num.orange { color: var(--orange); }
+  .stat-num.accent { color: var(--accent); }
+
+  .stat-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .filter-section { margin-bottom: 14px; }
+
+  .filter-section-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .filter-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 5px 13px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+
+  .filter-btn:hover { border-color: var(--border-hover); color: var(--text); }
+  .filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(200,245,66,0.06); }
+
+  .assignment-list { display: flex; flex-direction: column; gap: 4px; margin-top: 16px; }
+
+  .assignment-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 3px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .assignment-item:hover { border-color: var(--border-hover); background: var(--surface2); }
+
+  .accent-bar { border-radius: 2px; height: 100%; min-height: 38px; }
+  .bar-missing { background: var(--red); }
+  .bar-soon { background: var(--orange); }
+  .bar-ok { background: #2a2a2a; }
+
+  .assign-name {
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+
+  .assign-course { font-size: 11px; color: var(--muted); }
+
+  .assign-meta { text-align: right; }
+
+  .assign-due { font-size: 11px; color: var(--text); margin-bottom: 3px; white-space: nowrap; }
+  .assign-pts { font-size: 10px; color: var(--muted); white-space: nowrap; }
+
+  .badge {
+    display: inline-block;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+
+  .badge-missing { background: rgba(255,68,68,0.14); color: var(--red); }
+  .badge-soon { background: rgba(255,153,51,0.14); color: var(--orange); }
+
+  .empty {
+    text-align: center;
+    padding: 56px;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .fade-in { animation: fadeIn 0.25s ease forwards; opacity: 0; }
+  @keyframes fadeIn { to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">canvas<span>.</span>pull</div>
+    <div class="login-tagline">Assignment intelligence for students</div>
+
+    <div class="login-field">
+      <div class="login-label">School Domain</div>
+      <input class="login-input" id="domain" type="text" placeholder="school.instructure.com" autocomplete="off" />
+    </div>
+
+    <div class="login-field">
+      <div class="login-label">Canvas API Token</div>
+      <input class="login-input" id="token" type="password" placeholder="Paste your token here" autocomplete="off" />
+    </div>
+
+    <button class="login-btn" id="loginBtn" onclick="login()">Connect to Canvas</button>
+    <div id="loginStatus"></div>
+
+    <div class="login-help">
+      <strong>Get your token:</strong> Canvas &rarr; Account &rarr; Settings &rarr;<br>
+      Approved Integrations &rarr; New Access Token
+    </div>
+  </div>
+</div>
+
+<div id="dashboard">
+  <div class="dash-header">
+    <div>
+      <div class="dash-logo">canvas<span>.</span>pull</div>
+      <div class="dash-meta" id="dashMeta"></div>
+    </div>
+    <button class="logout-btn" onclick="logout()">Disconnect</button>
+  </div>
+
+  <div class="stats-row" id="statsRow"></div>
+
+  <div class="filter-section">
+    <div class="filter-section-label">Status</div>
+    <div class="filter-row" id="statusFilters"></div>
+  </div>
+
+  <div class="filter-section">
+    <div class="filter-section-label">Quarter</div>
+    <div class="filter-row" id="quarterFilters"></div>
+  </div>
+
+  <div id="output"></div>
+</div>
+
+<script>
+  let allAssignments = [];
+  let activeStatus = 'upcoming';
+  let activeQuarter = 'all';
+
+  const quarters = {
+    Q1: { start: new Date('2025-08-25'), end: new Date('2025-10-17') },
+    Q2: { start: new Date('2025-10-20'), end: new Date('2026-01-16') },
+    Q3: { start: new Date('2026-01-20'), end: new Date('2026-03-20') },
+    Q4: { start: new Date('2026-03-23'), end: new Date('2026-06-12') },
+  };
+
+  function getQuarter(due_raw) {
+    if (!due_raw) return null;
+    const d = new Date(due_raw);
+    for (const [q, range] of Object.entries(quarters)) {
+      if (d >= range.start && d <= range.end) return q;
+    }
+    return null;
+  }
+
+  async function login() {
+    const domain = document.getElementById('domain').value.trim().replace('https://', '').replace(/\/$/, '');
+    const token = document.getElementById('token').value.trim();
+    const btn = document.getElementById('loginBtn');
+    const status = document.getElementById('loginStatus');
+
+    if (!domain || !token) {
+      status.className = 'error';
+      status.innerHTML = 'Both fields required.';
+      return;
+    }
+
+    btn.disabled = true;
+    status.className = 'loading';
+    status.innerHTML = '<span class="spinner"></span>Connecting...';
+
+    try {
+      const res = await fetch('/api/assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain, token })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        status.className = 'error';
+        status.innerHTML = data.error || 'Connection failed.';
+        btn.disabled = false;
+        return;
+      }
+
+      allAssignments = data.assignments.map(a => ({ ...a, quarter: getQuarter(a.due_raw) }));
+
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('dashMeta').textContent = `${allAssignments.length} assignments across ${data.course_count} courses`;
+
+      renderStats();
+      renderFilters();
+      renderList();
+
+    } catch(e) {
+      status.className = 'error';
+      status.innerHTML = 'Could not reach backend. Is main.py running?';
+      btn.disabled = false;
+    }
+  }
+
+  function logout() {
+    allAssignments = [];
+    activeStatus = 'upcoming';
+    activeQuarter = 'all';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('loginStatus').innerHTML = '';
+    document.getElementById('loginBtn').disabled = false;
+    document.getElementById('domain').value = '';
+    document.getElementById('token').value = '';
+  }
+
+  function renderStats() {
+    const missing = allAssignments.filter(a => a.missing).length;
+    const soon = allAssignments.filter(a => a.due_soon && !a.missing).length;
+    const upcoming = allAssignments.filter(a => !a.missing && !a.due_soon).length;
+
+    document.getElementById('statsRow').innerHTML = `
+      <div class="stat fade-in"><div class="stat-num accent">${upcoming}</div><div class="stat-label">Upcoming</div></div>
+      <div class="stat fade-in"><div class="stat-num orange">${soon}</div><div class="stat-label">Due Soon</div></div>
+      <div class="stat fade-in"><div class="stat-num red">${missing}</div><div class="stat-label">Missing</div></div>
+      <div class="stat fade-in"><div class="stat-num">${allAssignments.length}</div><div class="stat-label">Total</div></div>
+    `;
+  }
+
+  function renderFilters() {
+    const statuses = [
+      { key: 'upcoming', label: 'Upcoming' },
+      { key: 'soon', label: 'Due Soon' },
+      { key: 'missing', label: 'Missing' },
+      { key: 'all', label: 'All' }
+    ];
+
+    document.getElementById('statusFilters').innerHTML = statuses.map(s => `
+      <button class="filter-btn ${s.key === activeStatus ? 'active' : ''}" id="sf-${s.key}" onclick="setStatus('${s.key}')">${s.label}</button>
+    `).join('');
+
+    const qs = ['all', 'Q1', 'Q2', 'Q3', 'Q4'];
+    document.getElementById('quarterFilters').innerHTML = qs.map(q => `
+      <button class="filter-btn ${q === activeQuarter ? 'active' : ''}" id="qf-${q}" onclick="setQuarter('${q}')">${q === 'all' ? 'All Year' : q}</button>
+    `).join('');
+  }
+
+  function setStatus(s) {
+    activeStatus = s;
+    document.querySelectorAll('[id^="sf-"]').forEach(el => el.classList.remove('active'));
+    document.getElementById(`sf-${s}`)?.classList.add('active');
+    renderList();
+  }
+
+  function setQuarter(q) {
+    activeQuarter = q;
+    document.querySelectorAll('[id^="qf-"]').forEach(el => el.classList.remove('active'));
+    document.getElementById(`qf-${q}`)?.classList.add('active');
+    renderList();
+  }
+
+  function renderList() {
+    let list = allAssignments;
+
+    if (activeQuarter !== 'all') list = list.filter(a => a.quarter === activeQuarter);
+    if (activeStatus === 'missing') list = list.filter(a => a.missing);
+    else if (activeStatus === 'soon') list = list.filter(a => a.due_soon && !a.missing);
+    else if (activeStatus === 'upcoming') list = list.filter(a => !a.missing && !a.due_soon);
+
+    const output = document.getElementById('output');
+
+    if (list.length === 0) {
+      output.innerHTML = '<div class="empty fade-in">Nothing here.</div>';
+      return;
+    }
+
+    output.innerHTML = `<div class="assignment-list fade-in">${list.map(a => `
+      <a class="assignment-item" href="${a.url}" target="_blank">
+        <div class="accent-bar ${a.missing ? 'bar-missing' : a.due_soon ? 'bar-soon' : 'bar-ok'}"></div>
+        <div>
+          <div class="assign-name">${a.name}</div>
+          <div class="assign-course">${a.course}</div>
+          ${a.missing ? '<span class="badge badge-missing">Missing</span>' : a.due_soon ? '<span class="badge badge-soon">Due Soon</span>' : ''}
+        </div>
+        <div class="assign-meta">
+          <div class="assign-due">${a.due || 'No due date'}</div>
+          <div class="assign-pts">${a.points !== null && a.points !== undefined ? a.points + ' pts' : ''}</div>
+        </div>
+      </a>`).join('')}</div>`;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') login();
+  });
+</script>
+</body>
+</html>
