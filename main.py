@@ -226,11 +226,15 @@ def ic_pull_grades(sess: requests.Session, ic_domain: str) -> list:
         for path in [
             f'/campus/api/portal/students/{person_id}/grades',
             f'/campus/api/portal/grades?personID={person_id}',
+            f'/campus/api/portal/students/{person_id}/roster?_expand=%7Bsection%7D',
+            f'/campus/api/portal/students/{person_id}/term',
+            f'/campus/api/portal/students/{person_id}/schoolYears',
         ]:
             try:
                 r = sess.get(f'{base}{path}', timeout=10)
                 log.info(f'IC grades {path} → {r.status_code} len={len(r.text)}')
                 if r.status_code == 200 and r.text.strip():
+                    log.info(f'IC grades {path} body[:400]={r.text[:400]}')
                     courses = _normalize_ic_api(r.json(), person_id)
                     if courses:
                         break
