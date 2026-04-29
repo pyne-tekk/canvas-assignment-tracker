@@ -1,0 +1,9 @@
+flask
+flask-cors
+requests
+gunicorn
+supabase
+cryptography
+beautifulsoup4
+apscheduler
+playwright
