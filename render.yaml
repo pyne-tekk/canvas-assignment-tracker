@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: slate
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: CREDENTIAL_KEY
+        generateValue: true
