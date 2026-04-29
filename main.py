@@ -116,37 +116,37 @@ def ncedcloud_authenticate(username: str, password: str, ic_domain: str) -> requ
         page = context.new_page()
         try:
             # Navigate to NCEDCloud SSO entry point
-            page.goto(sso_url, wait_until='networkidle', timeout=25000)
+            page.goto(sso_url, wait_until='networkidle')
             log.info(f'Playwright: landed on {page.url}')
 
             if 'idp.ncedcloud.org' not in page.url:
                 raise RuntimeError(f'Expected NCEDCloud IDP, got {page.url}')
 
-            # Fill username (Ember SPA — wait for JS to render the field)
-            page.wait_for_selector('input[type="text"], input[type="email"]', timeout=12000)
-            page.locator('input[type="text"], input[type="email"]').first.fill(username)
+            # Fill username (Ember SPA — wait for JS to render any input field)
+            page.wait_for_selector('input:visible')
+            page.locator('input:visible').first.fill(username)
             log.info('Playwright: username filled')
 
             # Submit username
             try:
-                page.locator('button:visible').first.click(timeout=3000)
+                page.locator('button:visible').first.click()
             except Exception:
                 page.keyboard.press('Enter')
 
             # Fill password
-            page.wait_for_selector('input[type="password"]', timeout=12000)
+            page.wait_for_selector('input[type="password"]')
             page.fill('input[type="password"]', password)
             log.info('Playwright: password filled')
 
             # Submit password
             try:
-                page.locator('button:visible').first.click(timeout=3000)
+                page.locator('button:visible').first.click()
             except Exception:
                 page.keyboard.press('Enter')
 
             # Wait for redirect back to IC domain
             try:
-                page.wait_for_url(f'**{ic_domain}**', timeout=30000)
+                page.wait_for_url(f'**{ic_domain}**')
                 log.info(f'Playwright: IC session established at {page.url}')
             except PWTimeout:
                 body_text = page.inner_text('body')
