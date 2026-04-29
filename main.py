@@ -211,8 +211,11 @@ def ic_pull_grades(sess: requests.Session, ic_domain: str) -> list:
             log.info(f'IC students endpoint {path} → {r.status_code}')
             if r.status_code == 200:
                 d = r.json()
+                if isinstance(d, list):
+                    d = d[0] if d else {}
                 person_id = (d.get('personID') or d.get('id') or
                              d.get('studentID') or d.get('student', {}).get('personID'))
+                log.info(f'IC students response keys: {list(d.keys()) if isinstance(d, dict) else "not a dict"}')
                 if person_id:
                     break
         except Exception as e:
