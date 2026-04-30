@@ -135,7 +135,7 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
                 body = response.json()
                 grade_data_map[response.url] = body
                 log.info(f'IC intercepted: {response.url}')
-            except Exception:
+            except BaseException:
                 pass
 
         page.on('response', _capture_json)
@@ -184,6 +184,13 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
                         break
                     _time.sleep(1)
                 else:
+                    try:
+                        ss = page.screenshot()
+                        import base64 as _b64
+                        log.info(f'NCEDCloud timeout screenshot (base64): {_b64.b64encode(ss).decode()[:500]}')
+                        log.info(f'NCEDCloud timeout page body: {page.inner_text("body")[:500]}')
+                    except Exception:
+                        pass
                     raise TimeoutError('Still on NCEDCloud IDP after 90 s')
                 log.info(f'Playwright: left NCEDCloud IDP, now at {page.url}')
                 # Let any further redirect chain complete
