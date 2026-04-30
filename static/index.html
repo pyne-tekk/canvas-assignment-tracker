@@ -728,6 +728,7 @@ body {
         <button class="filter-btn" id="gqf-Q2" onclick="setGQF('Q2')">Q2</button>
         <button class="filter-btn" id="gqf-Q3" onclick="setGQF('Q3')">Q3</button>
         <button class="filter-btn" id="gqf-Q4" onclick="setGQF('Q4')">Q4</button>
+        <button class="filter-btn" id="gqf-Final" onclick="setGQF('Final')">Final</button>
       </div>
       <div class="grade-grid" id="gradeGrid"></div>
     </div>
@@ -1239,16 +1240,28 @@ function renderGrades(courseList) {
   // Quarter filter bar — hide when showing IC (IC has no quarter data)
   const filterBar    = document.getElementById('gradeFilterBar');
 
-  if (icBanner)     icBanner.style.display     = useIC ? 'flex'  : 'none';
+  if (icBanner)     icBanner.style.display     = useIC ? 'flex' : 'none';
   if (canvasBanner) canvasBanner.style.display  = (!useIC && _ic.connected) ? 'flex' : 'none';
-  if (filterBar)    filterBar.style.display     = useIC ? 'none'  : 'flex';
+  if (filterBar)    filterBar.style.display     = 'flex';
 
   if (useIC) {
     // Sync time in banner
     const syncEl = document.getElementById('icGradeSyncTime');
     if (syncEl && _ic.synced_at) syncEl.textContent = timeAgo(_ic.synced_at);
 
-    document.getElementById('gradeGrid').innerHTML = _ic.grades.map(c => {
+    // Auto-select current quarter on first IC load
+    if (gqf === 'all') {
+      const termOrder = ['Q4','Q3','Q2','Q1'];
+      const activeTerm = termOrder.find(q => _ic.grades.some(c => c.term === q));
+      if (activeTerm) setGQF(activeTerm);
+    }
+
+    // Show/hide Final button based on whether IC has Final term data
+    const finalBtn = document.getElementById('gqf-Final');
+    if (finalBtn) finalBtn.style.display = _ic.grades.some(c => c.term === 'Final') ? '' : 'none';
+
+    const icFiltered = gqf === 'all' ? _ic.grades : _ic.grades.filter(c => c.term === gqf);
+    document.getElementById('gradeGrid').innerHTML = icFiltered.map(c => {
       const pct    = Math.round(c.grade);
       const col    = gradeColor(pct);
       const letter = c.letter || gradeLetter(pct);
@@ -1358,7 +1371,7 @@ function showPage(page, el) {
 
 function setSF(f) { sf=f; ['upcoming','soon','missing','all'].forEach(s=>document.getElementById('sf-'+s)?.classList.toggle('active',s===f)); renderAssign(); }
 function setQF(q) { qf=q; ['all','Q1','Q2','Q3','Q4'].forEach(s=>document.getElementById('qf-'+s)?.classList.toggle('active',s===q)); renderAssign(); }
-function setGQF(q) { gqf=q; ['all','Q1','Q2','Q3','Q4'].forEach(s=>document.getElementById('gqf-'+s)?.classList.toggle('active',s===q)); renderGrades(window._courses||[]); }
+function setGQF(q) { gqf=q; ['all','Q1','Q2','Q3','Q4','Final'].forEach(s=>document.getElementById('gqf-'+s)?.classList.toggle('active',s===q)); renderGrades(window._courses||[]); }
 function toggleNDD() { hideNDD=!hideNDD; document.getElementById('nddToggle').classList.toggle('on',hideNDD); renderAssign(); }
 
 document.addEventListener('keydown', e => {
