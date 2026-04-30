@@ -1604,7 +1604,18 @@ function renderDrawerAssignments(course) {
     !a.missing
   );
 
+  // Fallback: old cache format has flat assignments but no categories_by_term
   if (!cats.length && !upcoming.length) {
+    const flat = (course.assignments || []).sort((a, b) => {
+      if (!a.due && !b.due) return 0;
+      if (!a.due) return 1; if (!b.due) return -1;
+      return new Date(b.due) - new Date(a.due);
+    });
+    if (flat.length) {
+      body.innerHTML = flat.map(a => asgnRow(a)).join('') +
+        `<div style="font-size:11px;color:var(--text3);padding:12px 0 4px">Sync IC to load category weights and grade predictor.</div>`;
+      return;
+    }
     body.innerHTML = `<div class="drawer-empty">No assignment data available.<br>
       <span style="font-size:11px;color:var(--text3);margin-top:6px;display:block">Sync IC to load category detail.</span>
     </div>`;
