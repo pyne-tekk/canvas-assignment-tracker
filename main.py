@@ -119,6 +119,27 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
         context = browser.new_context(user_agent=USER_AGENT)
         context.set_default_timeout(60000)  # 60s max per operation
         page = context.new_page()
+
+        # ── Intercept ALL JSON API responses from the very start ──────────────
+        # IC fires grade API calls during the initial portal load right after
+        # the SAML redirect — we must be listening before goto(sso_url).
+        grade_data_map = {}
+
+        def _capture_json(response):
+            if response.status != 200:
+                return
+            ct = response.headers.get('content-type', '')
+            if 'json' not in ct:
+                return
+            try:
+                body = response.json()
+                grade_data_map[response.url] = body
+                log.info(f'IC intercepted: {response.url}')
+            except Exception:
+                pass
+
+        page.on('response', _capture_json)
+
         try:
             # Navigate to NCEDCloud SSO entry point
             # Use 'load' not 'networkidle' — Ember SPA fires constant XHR, networkidle never fires
@@ -203,51 +224,29 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
 
             log.info(f'IC personID={person_id}')
 
-            # ── Intercept IC's own API calls on the grades page ───────────────
-            # All standard endpoint paths 404 for this district — instead we
-            # let the IC portal load naturally and capture whatever JSON APIs
-            # it fires internally. Those are guaranteed to work.
-            grade_data_map = {}
+            # ── Wait for portal to settle then navigate to grades section ──────
+            # Interceptor is already running since before goto(sso_url), so it
+            # captured everything fired during the post-SSO portal load.
+            # Navigate to grades to trigger any lazy-loaded grade API calls.
+            log.info(f'IC intercepted so far: {len(grade_data_map)} APIs — navigating to grades section')
+            try:
+                page.goto(f'{base}/campus/nav-wrapper/student/portal/student/grade',
+                          wait_until='networkidle', timeout=30000)
+                log.info(f'IC grades section loaded, total intercepted: {len(grade_data_map)} APIs')
+            except Exception as e:
+                log.info(f'IC grades section nav: {e}')
 
-            def _capture_json(response):
-                if response.status != 200:
-                    return
-                ct = response.headers.get('content-type', '')
-                if 'json' not in ct:
-                    return
-                try:
-                    grade_data_map[response.url] = response.json()
-                    log.info(f'IC intercepted API: {response.url}')
-                except Exception:
-                    pass
-
-            page.on('response', _capture_json)
-
-            # Navigate to the grades section — triggers IC's internal API calls
-            for grades_url in [
-                f'{base}/campus/nav-wrapper/student/portal/student/grade',
-                f'{base}/campus/nav-wrapper/student/portal/student/grades',
-                f'{base}/campus/portal/portalOutlineWrapper.xsl?x=portal.PortalOutline&contactID={person_id or ""}&lang=en',
-            ]:
-                try:
-                    page.goto(grades_url, wait_until='networkidle', timeout=30000)
-                    log.info(f'IC grades page loaded: {grades_url} → intercepted {len(grade_data_map)} JSON APIs')
-                    if grade_data_map:
-                        break
-                except Exception as e:
-                    log.info(f'IC grades page {grades_url}: {e}')
-
-            # Log all intercepted APIs so we can see what IC actually returns
+            # Log every intercepted API so we can identify working endpoints
             for url, body in grade_data_map.items():
                 log.info(f'IC API {url} body[:300]={str(body)[:300]}')
 
-            # Try to parse grades from any intercepted response
+            # Parse grades from any intercepted response
             for url, body in grade_data_map.items():
                 try:
                     parsed = _normalize_ic_api(body, person_id)
                     if parsed:
                         courses = parsed
-                        log.info(f'IC grades: {len(courses)} courses from intercepted {url}')
+                        log.info(f'IC grades: {len(courses)} courses from {url}')
                         break
                 except Exception as e:
                     log.info(f'IC normalize {url}: {e}')
