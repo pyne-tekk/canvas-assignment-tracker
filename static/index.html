@@ -1211,6 +1211,7 @@ async function enterApp() {
   animateSidebar();
   await loadICStatus();
   renderGrades(window._courses || []);
+  _fillAssignmentsFromIC();
   renderAssign();
   renderDash();
   initCalendar();
@@ -1316,11 +1317,49 @@ function renderDash() {
   document.getElementById('priorityList').innerHTML = priority.length ? priority.map(assignCard).join('') : '<div class="empty">Nothing urgent right now.</div>';
 }
 
+function _fillAssignmentsFromIC() {
+  if (all.length || !_ic.connected || !_ic.enabled) return;
+  const now = new Date();
+  const pending = [];
+  (_ic.grades || []).forEach(course => {
+    (course.assignments || []).forEach(a => {
+      if (!a.missing && !a.notGraded && !a.incomplete) return;
+      const dueDate    = a.due ? new Date(a.due) : null;
+      const hoursUntil = dueDate ? (dueDate - now) / 3600000 : null;
+      pending.push({
+        id:           `ic_${course.section_id}_${a.name}`,
+        name:         a.name,
+        course:       course.name,
+        group:        a.category || '',
+        due:          dueDate ? dueDate.toLocaleDateString('en-US', {month:'short', day:'numeric'}) : null,
+        due_raw:      a.due || null,
+        points:       a.max,
+        missing:      a.missing  || false,
+        due_soon:     hoursUntil !== null && hoursUntil > 0 && hoursUntil <= 48,
+        url:          '',
+        grade_impact: null,
+        quarter:      getQ(a.due),
+        _source:      'ic',
+      });
+    });
+  });
+  if (pending.length) { all = pending; renderAssign(); renderDash(); }
+}
+
 function renderAssign() {
+  if (!all.length) {
+    document.getElementById('assignList').innerHTML =
+      `<div class="empty">No assignments loaded.<br>
+       <span style="font-size:12px;color:var(--text3);margin-top:6px;display:block">
+         Connect Canvas in <span style="color:var(--text2);cursor:pointer;text-decoration:underline"
+         onclick="showPage('settings',document.querySelector('[data-page=settings]'))">Settings</span> to see upcoming assignments.
+       </span></div>`;
+    return;
+  }
   let list = all;
-  if (qf !== 'all')        list = list.filter(a=>a.quarter===qf);
-  if (sf === 'missing')    list = list.filter(a=>a.missing);
-  else if (sf === 'soon')  list = list.filter(a=>a.due_soon&&!a.missing);
+  if (qf !== 'all')           list = list.filter(a=>a.quarter===qf);
+  if (sf === 'missing')       list = list.filter(a=>a.missing);
+  else if (sf === 'soon')     list = list.filter(a=>a.due_soon&&!a.missing);
   else if (sf === 'upcoming') list = list.filter(a=>!a.missing&&!a.due_soon);
   if (hideNDD) list = list.filter(a=>a.due);
   document.getElementById('assignList').innerHTML = list.length ? list.map(assignCard).join('') : '<div class="empty">Nothing here.</div>';
@@ -1604,11 +1643,15 @@ function renderDrawerAssignments(course) {
     !a.missing
   );
 
-  // Fallback: old cache format has flat assignments but no categories_by_term
+  // Fallback: categories_by_term not yet populated — use flat assignments filtered by term dates
   if (!cats.length && !upcoming.length) {
-    const flat = (course.assignments || []).sort((a, b) => {
-      if (!a.due && !b.due) return 0;
-      if (!a.due) return 1; if (!b.due) return -1;
+    let flat = course.assignments || [];
+    if (flat.length && gqf !== 'all' && course.term_start && course.term_end) {
+      const s = new Date(course.term_start), e = new Date(course.term_end);
+      flat = flat.filter(a => { if (!a.due) return true; const d = new Date(a.due); return d >= s && d <= e; });
+    }
+    flat = [...flat].sort((a, b) => {
+      if (!a.due && !b.due) return 0; if (!a.due) return 1; if (!b.due) return -1;
       return new Date(b.due) - new Date(a.due);
     });
     if (flat.length) {
@@ -1616,8 +1659,8 @@ function renderDrawerAssignments(course) {
         `<div style="font-size:11px;color:var(--text3);padding:12px 0 4px">Sync IC to load category weights and grade predictor.</div>`;
       return;
     }
-    body.innerHTML = `<div class="drawer-empty">No assignment data available.<br>
-      <span style="font-size:11px;color:var(--text3);margin-top:6px;display:block">Sync IC to load category detail.</span>
+    body.innerHTML = `<div class="drawer-empty">No assignments found for this term.<br>
+      <span style="font-size:11px;color:var(--text3);margin-top:6px;display:block">Sync IC to refresh.</span>
     </div>`;
     return;
   }
