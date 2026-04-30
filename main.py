@@ -218,6 +218,48 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
             except Exception as e:
                 log.info(f'IC grades endpoint failed: {e}')
 
+            # ── Fetch all assignments since school year start ──────────────────
+            # modifiedDate=school year start guarantees every assignment is included
+            try:
+                page.goto(
+                    f'{base}/campus/api/portal/assignment/recentlyScored'
+                    f'?modifiedDate=2025-08-25T00:00:00',
+                    wait_until='load', timeout=20000
+                )
+                asgn_raw = page.inner_text('body').strip()
+                assignments = json.loads(asgn_raw) if asgn_raw else []
+                if not isinstance(assignments, list):
+                    assignments = assignments.get('data', [])
+
+                # Group by sectionID
+                by_section = {}
+                for a in assignments:
+                    sid = a.get('sectionID')
+                    if sid is None:
+                        continue
+                    by_section.setdefault(str(sid), []).append({
+                        'name':       a.get('assignmentName', ''),
+                        'due':        a.get('dueDate', ''),
+                        'score':      a.get('scorePoints'),
+                        'max':        a.get('totalPoints'),
+                        'pct':        a.get('scorePercentage'),
+                        'missing':    a.get('missing', False),
+                        'late':       a.get('late', False),
+                        'dropped':    a.get('dropped', False),
+                        'incomplete': a.get('incomplete', False),
+                        'notGraded':  a.get('notGraded', False),
+                        'turnedIn':   a.get('turnedIn', False),
+                    })
+
+                # Attach assignments to matching courses
+                for c in courses:
+                    sid = str(c.get('section_id', ''))
+                    c['assignments'] = by_section.get(sid, [])
+
+                log.info(f'IC assignments: {len(assignments)} total across {len(by_section)} sections')
+            except Exception as e:
+                log.info(f'IC assignments fetch failed: {e}')
+
             log.info(f'IC Playwright pull complete: {len(courses)} courses')
             return courses
 
@@ -479,8 +521,15 @@ def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str) 
         return False
 
 
+_sync_running = False
+
 def sync_all_ic_users():
     """Scheduled job — runs every 20 minutes, refreshes grades for all IC-connected users."""
+    global _sync_running
+    if _sync_running:
+        log.info('IC sync job: previous run still in progress, skipping')
+        return
+    _sync_running = True
     try:
         rows = (
             supabase.table('users')
@@ -495,6 +544,8 @@ def sync_all_ic_users():
             sync_user_ic(row['id'], row['ic_domain'], row['ic_username'], row['ic_password'])
     except Exception as e:
         log.error(f'IC sync job error: {e}')
+    finally:
+        _sync_running = False
 
 
 scheduler = BackgroundScheduler(daemon=True)
