@@ -403,27 +403,36 @@ def _normalize_ic_api(data, person_id=None) -> list:
             name = (item.get('courseName') or item.get('name') or
                     item.get('courseTitle') or 'Unknown Course')
 
-            # Log the full course object first time so we can see grade field names
-            log.info(f'IC course keys: {list(item.keys())}')
+            # Grade lives inside gradingTasks[] — find the portal Term Grade task
+            grading_tasks = item.get('gradingTasks') or []
+            task = next(
+                (t for t in grading_tasks if t.get('portal') and t.get('taskName') == 'Term Grade'),
+                next((t for t in grading_tasks if t.get('portal')), None) or
+                (grading_tasks[0] if grading_tasks else None)
+            )
 
-            pct = (item.get('percent') or item.get('calculatedScoreRaw') or
-                   item.get('score') or item.get('calculatedScore') or
-                   item.get('termScore') or item.get('gradePercent'))
+            if not task:
+                log.info(f'IC skip {name}: no gradingTask (tasks={len(grading_tasks)})')
+                continue
 
-            letter = (item.get('grade') if isinstance(item.get('grade'), str) else None or
-                      item.get('calculatedScoreString') or item.get('gradeLetter') or
-                      item.get('letter') or item.get('scoreString'))
+            pct = task.get('percent') or task.get('progressPercent')
+            score_str = task.get('score') or task.get('progressScore')
+            task_term = task.get('termName') or term_name
 
-            if pct is not None:
-                courses.append({
-                    'name':       str(name).strip(),
-                    'grade':      float(pct),
-                    'letter':     str(letter).strip() if letter else None,
-                    'term':       str(term_name).strip(),
-                    'source':     'ic',
-                    'section_id': (item.get('sectionID') or item.get('sectionId') or
-                                   item.get('section_id') or item.get('id')),
-                })
+            log.info(f'IC course {name} | term={task_term} | pct={pct} | score={score_str} | portal={task.get("portal")}')
+
+            if pct is None:
+                log.info(f'IC skip {name}: pct is None, task keys={list(task.keys())}')
+                continue
+
+            courses.append({
+                'name':       str(name).strip(),
+                'grade':      float(pct),
+                'letter':     str(score_str).strip() if score_str else None,
+                'term':       str(task_term).strip(),
+                'source':     'ic',
+                'section_id': item.get('sectionID') or item.get('sectionId'),
+            })
         except Exception:
             continue
 
