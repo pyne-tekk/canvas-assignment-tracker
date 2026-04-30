@@ -1342,12 +1342,6 @@ function _fillAssignmentsFromIC() {
   const pending = [];
   (_ic.grades || []).filter(c => c.term === currentTerm).forEach(course => {
     (course.assignments || []).forEach(a => {
-      if (!a.missing && !a.notGraded && !a.incomplete) return;
-      // Skip assignments due more than 14 days ago — stale missing from old quarters
-      if (a.due) {
-        const daysOld = (now - new Date(a.due)) / 86400000;
-        if (daysOld > 14) return;
-      }
       const dueDate    = a.due ? new Date(a.due) : null;
       const hoursUntil = dueDate ? (dueDate - now) / 3600000 : null;
       pending.push({
