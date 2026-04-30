@@ -212,7 +212,7 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
                 page.goto(f'{base}/campus/resources/portal/grades',
                           wait_until='load', timeout=20000)
                 raw = page.inner_text('body').strip()
-                log.info(f'IC grades body[:600]={raw[:600]}')
+                log.info(f'IC grades body[:2000]={raw[:2000]}')
                 courses = _normalize_ic_api(json.loads(raw), None)
                 log.info(f'IC grades: {len(courses)} courses')
             except Exception as e:
@@ -377,57 +377,53 @@ def _fetch_ic_assignments(sess, base, person_id, course):
 
 def _normalize_ic_api(data, person_id=None) -> list:
     """
-    Normalise IC API JSON into Slate's grade format.
-    IC API shape varies by district — handle multiple known patterns.
+    Normalise IC /campus/resources/portal/grades response into Slate's grade format.
+    Structure: [{enrollmentID, terms:[{termName, courses:[{courseName, ...grade fields}]}]}]
     """
     courses = []
-    items = data if isinstance(data, list) else data.get('courses', data.get('data', []))
 
-    for item in items:
+    # Flatten enrollment → terms → courses
+    enrollments = data if isinstance(data, list) else [data]
+    flat_courses = []
+    for enrollment in enrollments:
+        if not isinstance(enrollment, dict):
+            continue
+        for term in enrollment.get('terms', []):
+            term_name = term.get('termName') or term.get('term', '')
+            for course in term.get('courses', []):
+                flat_courses.append((term_name, course))
+
+    # If no nested structure found, try treating data as flat course list
+    if not flat_courses:
+        items = data if isinstance(data, list) else data.get('courses', [])
+        flat_courses = [(c.get('termName', ''), c) for c in items if isinstance(c, dict)]
+
+    for term_name, item in flat_courses:
         try:
-            name = (
-                item.get('courseName') or
-                item.get('name') or
-                item.get('courseTitle') or
-                item.get('course', {}).get('name', 'Unknown Course')
-            )
-            # Grade percentage — IC uses various field names
-            pct = (
-                item.get('percent') or
-                item.get('calculatedScoreRaw') or
-                item.get('currentMark', {}).get('percent') or
-                item.get('grade') or
-                item.get('score')
-            )
-            # Letter grade
-            letter = (
-                item.get('grade') if isinstance(item.get('grade'), str) else None or
-                item.get('calculatedScoreString') or
-                item.get('currentMark', {}).get('score') or
-                item.get('letter')
-            )
-            # Term/period
-            term = (
-                item.get('termName') or
-                item.get('term') or
-                item.get('markingPeriod') or
-                item.get('period', '')
-            )
+            name = (item.get('courseName') or item.get('name') or
+                    item.get('courseTitle') or 'Unknown Course')
+
+            # Log the full course object first time so we can see grade field names
+            log.info(f'IC course keys: {list(item.keys())}')
+
+            pct = (item.get('percent') or item.get('calculatedScoreRaw') or
+                   item.get('score') or item.get('calculatedScore') or
+                   item.get('termScore') or item.get('gradePercent'))
+
+            letter = (item.get('grade') if isinstance(item.get('grade'), str) else None or
+                      item.get('calculatedScoreString') or item.get('gradeLetter') or
+                      item.get('letter') or item.get('scoreString'))
 
             if pct is not None:
-                try:
-                    courses.append({
-                        'name':       str(name).strip(),
-                        'grade':      float(pct),
-                        'letter':     str(letter).strip() if letter else None,
-                        'term':       str(term).strip(),
-                        'source':     'ic',
-                        # preserve IDs so _fetch_ic_assignments can work
-                        'section_id': (item.get('sectionID') or item.get('section_id') or
-                                       item.get('sectionId') or item.get('id')),
-                    })
-                except (ValueError, TypeError):
-                    pass
+                courses.append({
+                    'name':       str(name).strip(),
+                    'grade':      float(pct),
+                    'letter':     str(letter).strip() if letter else None,
+                    'term':       str(term_name).strip(),
+                    'source':     'ic',
+                    'section_id': (item.get('sectionID') or item.get('sectionId') or
+                                   item.get('section_id') or item.get('id')),
+                })
         except Exception:
             continue
 
