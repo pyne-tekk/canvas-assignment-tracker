@@ -218,47 +218,59 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
             except Exception as e:
                 log.info(f'IC grades endpoint failed: {e}')
 
-            # ── Fetch all assignments since school year start ──────────────────
-            # modifiedDate=school year start guarantees every assignment is included
-            try:
-                page.goto(
-                    f'{base}/campus/api/portal/assignment/recentlyScored'
-                    f'?modifiedDate=2025-08-25T00:00:00',
-                    wait_until='load', timeout=20000
-                )
-                asgn_raw = page.inner_text('body').strip()
-                assignments = json.loads(asgn_raw) if asgn_raw else []
-                if not isinstance(assignments, list):
-                    assignments = assignments.get('data', [])
-
-                # Group by sectionID
-                by_section = {}
-                for a in assignments:
-                    sid = a.get('sectionID')
-                    if sid is None:
-                        continue
-                    by_section.setdefault(str(sid), []).append({
-                        'name':       a.get('assignmentName', ''),
-                        'due':        a.get('dueDate', ''),
-                        'score':      a.get('scorePoints'),
-                        'max':        a.get('totalPoints'),
-                        'pct':        a.get('scorePercentage'),
-                        'missing':    a.get('missing', False),
-                        'late':       a.get('late', False),
-                        'dropped':    a.get('dropped', False),
-                        'incomplete': a.get('incomplete', False),
-                        'notGraded':  a.get('notGraded', False),
-                        'turnedIn':   a.get('turnedIn', False),
-                    })
-
-                # Attach assignments to matching courses
-                for c in courses:
-                    sid = str(c.get('section_id', ''))
-                    c['assignments'] = by_section.get(sid, [])
-
-                log.info(f'IC assignments: {len(assignments)} total across {len(by_section)} sections')
-            except Exception as e:
-                log.info(f'IC assignments fetch failed: {e}')
+            # ── Fetch per-course category detail (weights + assignments) ─────
+            # /campus/resources/portal/grades/detail/{sectionID}?showAllTerms=true
+            # Returns categories (Perform/Prepare/Rehearse) with weights and graded assignments.
+            for c in courses:
+                sid = c.get('section_id')
+                if not sid:
+                    c['categories_by_term'] = {}
+                    c['assignments'] = []
+                    continue
+                try:
+                    page.goto(
+                        f'{base}/campus/resources/portal/grades/detail/{sid}'
+                        f'?showAllTerms=true&classroomSectionID={sid}',
+                        wait_until='load', timeout=15000
+                    )
+                    raw = page.inner_text('body').strip()
+                    detail = json.loads(raw) if raw else {}
+                    cats_by_term = {}
+                    all_asgns    = []
+                    for d in detail.get('details', []):
+                        term_name = d.get('task', {}).get('termName', 'Unknown')
+                        cats = []
+                        for cat in d.get('categories', []):
+                            asgns = []
+                            for a in cat.get('assignments', []):
+                                asgn = {
+                                    'name':       a.get('assignmentName', ''),
+                                    'due':        a.get('dueDate', ''),
+                                    'score':      a.get('scorePoints'),
+                                    'max':        a.get('totalPoints'),
+                                    'pct':        a.get('scorePercentage'),
+                                    'missing':    a.get('missing', False),
+                                    'late':       a.get('late', False),
+                                    'dropped':    a.get('dropped', False),
+                                    'incomplete': a.get('incomplete', False),
+                                    'notGraded':  a.get('notGraded', False),
+                                    'category':   cat.get('name', ''),
+                                }
+                                asgns.append(asgn)
+                                all_asgns.append(asgn)
+                            cats.append({
+                                'name':        cat.get('name', 'Other'),
+                                'weight':      cat.get('weight', 0),
+                                'assignments': asgns,
+                            })
+                        cats_by_term[term_name] = cats
+                    c['categories_by_term'] = cats_by_term
+                    c['assignments']         = all_asgns
+                    log.info(f'IC detail section={sid}: {len(cats_by_term)} terms, {len(all_asgns)} assignments')
+                except Exception as e:
+                    log.info(f'IC detail fetch failed section={sid}: {e}')
+                    c['categories_by_term'] = {}
+                    c['assignments']         = []
 
             log.info(f'IC Playwright pull complete: {len(courses)} courses')
             return courses
@@ -772,7 +784,7 @@ def get_quarter():
     return 'all'
 
 
-def format_assignment(a, course_name, now, group_id=None, group_scores=None):
+def format_assignment(a, course_name, now, group_id=None, group_name=None, group_scores=None):
     due_raw    = a.get("due_at")
     due_str    = None
     hours_until = None
@@ -808,6 +820,7 @@ def format_assignment(a, course_name, now, group_id=None, group_scores=None):
         "id":           a["id"],
         "name":         a["name"],
         "course":       course_name,
+        "group":        group_name,
         "due":          due_str,
         "due_raw":      due_raw,
         "points":       pts,
@@ -893,9 +906,12 @@ def get_assignments():
                         if missing_only and not a.get("is_missing_submission"):
                             continue
                         if not any(x["id"] == a["id"] for x in assignments):
+                            gid   = a.get("assignment_group_id")
+                            gname = next((g["name"] for g in groups if g["id"] == gid), None)
                             assignments.append(format_assignment(
                                 a, cname, now,
-                                group_id=a.get("assignment_group_id"),
+                                group_id=gid,
+                                group_name=gname,
                                 group_scores=group_scores,
                             ))
                 except Exception:
