@@ -219,8 +219,8 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
                 log.info(f'IC grades endpoint failed: {e}')
 
             # ── Fetch per-course category detail (weights + assignments) ─────
-            # /campus/resources/portal/grades/detail/{sectionID}?showAllTerms=true
-            # Returns categories (Perform/Prepare/Rehearse) with weights and graded assignments.
+            # Must use page.evaluate(fetch) not page.goto — this is an XHR-only
+            # endpoint; browser navigation returns the SPA HTML shell, not JSON.
             for c in courses:
                 sid = c.get('section_id')
                 if not sid:
@@ -228,13 +228,15 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
                     c['assignments'] = []
                     continue
                 try:
-                    page.goto(
-                        f'{base}/campus/resources/portal/grades/detail/{sid}'
-                        f'?showAllTerms=true&classroomSectionID={sid}',
-                        wait_until='load', timeout=15000
-                    )
-                    raw = page.inner_text('body').strip()
-                    detail = json.loads(raw) if raw else {}
+                    url = (f'{base}/campus/resources/portal/grades/detail/{sid}'
+                           f'?showAllTerms=true&classroomSectionID={sid}')
+                    detail = page.evaluate(f'''
+                        async () => {{
+                            const r = await fetch("{url}");
+                            if (!r.ok) return {{}};
+                            return r.json();
+                        }}
+                    ''')
                     cats_by_term = {}
                     all_asgns    = []
                     for d in detail.get('details', []):
@@ -445,16 +447,18 @@ def _normalize_ic_api(data, person_id=None) -> list:
         if not isinstance(enrollment, dict):
             continue
         for term in enrollment.get('terms', []):
-            term_name = term.get('termName') or term.get('term', '')
+            term_name  = term.get('termName') or term.get('term', '')
+            term_start = term.get('startDate', '')
+            term_end   = term.get('endDate', '')
             for course in term.get('courses', []):
-                flat_courses.append((term_name, course))
+                flat_courses.append((term_name, term_start, term_end, course))
 
     # If no nested structure found, try treating data as flat course list
     if not flat_courses:
         items = data if isinstance(data, list) else data.get('courses', [])
-        flat_courses = [(c.get('termName', ''), c) for c in items if isinstance(c, dict)]
+        flat_courses = [(c.get('termName', ''), '', '', c) for c in items if isinstance(c, dict)]
 
-    for term_name, item in flat_courses:
+    for term_name, term_start, term_end, item in flat_courses:
         try:
             name = (item.get('courseName') or item.get('name') or
                     item.get('courseTitle') or 'Unknown Course')
@@ -486,6 +490,8 @@ def _normalize_ic_api(data, person_id=None) -> list:
                 'grade':      float(pct),
                 'letter':     str(score_str).strip() if score_str else None,
                 'term':       str(task_term).strip(),
+                'term_start': term_start,
+                'term_end':   term_end,
                 'source':     'ic',
                 'section_id': item.get('sectionID') or item.get('sectionId'),
             })
