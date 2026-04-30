@@ -177,21 +177,11 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
             # Instead, wait until we leave idp.ncedcloud.org, then let it settle.
             try:
                 # wait_for_function uses eval() which NCEDCloud CSP blocks.
-                # Poll page.url from Python instead — no JS eval needed.
-                import time as _time
-                for _i in range(90):
-                    if 'idp.ncedcloud.org' not in page.url:
-                        break
-                    _time.sleep(1)
-                else:
-                    try:
-                        ss = page.screenshot()
-                        import base64 as _b64
-                        log.info(f'NCEDCloud timeout screenshot (base64): {_b64.b64encode(ss).decode()[:500]}')
-                        log.info(f'NCEDCloud timeout page body: {page.inner_text("body")[:500]}')
-                    except Exception:
-                        pass
-                    raise TimeoutError('Still on NCEDCloud IDP after 90 s')
+                # wait_for_url with a Python lambda predicate — no JS eval, no CSP issue.
+                page.wait_for_url(
+                    lambda url: 'idp.ncedcloud.org' not in url,
+                    timeout=90000
+                )
                 log.info(f'Playwright: left NCEDCloud IDP, now at {page.url}')
                 # Let any further redirect chain complete
                 try:
