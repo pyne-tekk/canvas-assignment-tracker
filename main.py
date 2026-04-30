@@ -107,11 +107,14 @@ def ncedcloud_authenticate(username: str, password: str, ic_domain: str) -> requ
     log.info(f'NCEdCloud SSO URL: {sso_url}')
 
     # ── Step 2: Playwright handles the JS-driven SAML SSO flow ───────────────
+    log.info('Playwright: starting browser launch...')
     with sync_playwright() as p:
+        log.info('Playwright: sync_playwright context entered')
         browser = p.chromium.launch(
             headless=True,
             args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
         )
+        log.info('Playwright: browser launched')
         context = browser.new_context(user_agent=USER_AGENT)
         context.set_default_timeout(60000)  # 60s max per operation
         page = context.new_page()
