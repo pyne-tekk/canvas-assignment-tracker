@@ -201,63 +201,22 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
                     raise ValueError('Invalid NCEDCloud username or password.')
                 raise RuntimeError('NCEDCloud SSO timed out — may still be on IDP after 90s.')
 
-            # ── Fetch grades while browser session is still live ──────────────
-            # IC validates sessions server-side (browser fingerprint bound),
-            # so we fetch via Playwright instead of transferring cookies to requests.
+            # ── Fetch grades from confirmed endpoints ─────────────────────────
+            # URLs confirmed from browser network tab:
+            # /campus/resources/portal/grades        — 118 kB, full grade data
+            # /campus/api/portal/assignment/recentlyScored — all assignments
             base = f'https://{ic_domain}'
             courses = []
-            person_id = None
 
-            for path in ['/campus/api/portal/students', '/campus/api/portal/student']:
-                try:
-                    page.goto(f'{base}{path}', wait_until='load', timeout=20000)
-                    raw = page.inner_text('body').strip()
-                    log.info(f'IC students {path} body[:200]={raw[:200]}')
-                    d = json.loads(raw)
-                    if isinstance(d, list): d = d[0] if d else {}
-                    person_id = (d.get('personID') or d.get('id') or
-                                 d.get('studentID') or d.get('student', {}).get('personID'))
-                    if person_id:
-                        break
-                except Exception as e:
-                    log.info(f'IC students {path}: {e}')
-
-            log.info(f'IC personID={person_id}')
-
-            # ── Wait for portal to settle then navigate to grades section ──────
-            # Interceptor is already running since before goto(sso_url), so it
-            # captured everything fired during the post-SSO portal load.
-            # Navigate to grades to trigger any lazy-loaded grade API calls.
-            log.info(f'IC intercepted so far: {len(grade_data_map)} APIs — navigating to grades section')
             try:
-                page.goto(f'{base}/campus/nav-wrapper/student/portal/student/grade',
-                          wait_until='networkidle', timeout=30000)
-                log.info(f'IC grades section loaded, total intercepted: {len(grade_data_map)} APIs')
+                page.goto(f'{base}/campus/resources/portal/grades',
+                          wait_until='load', timeout=20000)
+                raw = page.inner_text('body').strip()
+                log.info(f'IC grades body[:600]={raw[:600]}')
+                courses = _normalize_ic_api(json.loads(raw), None)
+                log.info(f'IC grades: {len(courses)} courses')
             except Exception as e:
-                log.info(f'IC grades section nav: {e}')
-
-            # Log every intercepted API so we can identify working endpoints
-            for url, body in grade_data_map.items():
-                log.info(f'IC API {url} body[:300]={str(body)[:300]}')
-
-            # Parse grades from any intercepted response
-            for url, body in grade_data_map.items():
-                try:
-                    parsed = _normalize_ic_api(body, person_id)
-                    if parsed:
-                        courses = parsed
-                        log.info(f'IC grades: {len(courses)} courses from {url}')
-                        break
-                except Exception as e:
-                    log.info(f'IC normalize {url}: {e}')
-
-            if not courses:
-                try:
-                    page.goto(f'{base}/campus/portal/grades.jsp', wait_until='load', timeout=20000)
-                    courses = _parse_ic_html(page.content())
-                    log.info(f'IC HTML parse → {len(courses)} courses')
-                except Exception as e:
-                    log.info(f'IC HTML fallback: {e}')
+                log.info(f'IC grades endpoint failed: {e}')
 
             log.info(f'IC Playwright pull complete: {len(courses)} courses')
             return courses
