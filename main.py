@@ -651,7 +651,7 @@ def canvas_get(domain, token, endpoint, params={}):
     url     = f"https://{domain}/api/v1{endpoint}"
     headers = {"Authorization": f"Bearer {token}"}
     while url:
-        r = requests.get(url, headers=headers, params=params)
+        r = requests.get(url, headers=headers, params=params, timeout=20)
         r.raise_for_status()
         data = r.json()
         if isinstance(data, list):
