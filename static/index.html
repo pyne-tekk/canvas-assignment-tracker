@@ -1099,7 +1099,12 @@ async function loadSavedCanvas() {
   if (data.canvas_domain && data.canvas_token) {
     document.getElementById('domain').value = data.canvas_domain;
     document.getElementById('token').value  = data.canvas_token;
-    await login();
+    const ok = await login();
+    if (!ok) {
+      // Token invalid or expired — drop to canvas step so user can fix it
+      document.getElementById('authStep').style.display   = 'none';
+      document.getElementById('canvasStep').style.display = 'block';
+    }
   } else {
     document.getElementById('authStep').style.display   = 'none';
     document.getElementById('canvasStep').style.display = 'block';
@@ -1117,7 +1122,7 @@ async function login() {
   try {
     const res  = await fetch('/api/assignments', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({domain,token}) });
     const data = await res.json();
-    if (!res.ok) { status.className='error'; status.textContent=data.error||'Connection failed.'; btn.disabled=false; return; }
+    if (!res.ok) { status.className='error'; status.textContent=data.error||'Connection failed.'; btn.disabled=false; return false; }
 
     all = data.assignments.map(a => ({...a, quarter: getQ(a.due_raw)}));
 
@@ -1142,9 +1147,11 @@ async function login() {
     await loadICStatus();
     renderGrades(data.courses || []);
     initCalendar();
+    return true;
   } catch(e) {
     status.className='error'; status.textContent='Could not reach backend. Is main.py running?';
     btn.disabled=false;
+    return false;
   }
 }
 
