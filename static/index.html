@@ -627,20 +627,6 @@ body {
         <div id="authStatus"></div>
       </div>
 
-      <div id="canvasStep" style="display:none">
-        <div class="login-logo">Slate<span>.</span></div>
-        <div class="login-sub">Connect your Canvas account.</div>
-        <div class="field">
-          <label class="field-label" for="domain">School domain</label>
-          <input class="field-input" id="domain" type="text" placeholder="school.instructure.com" autocomplete="off" />
-        </div>
-        <div class="field">
-          <label class="field-label" for="token">Canvas API token</label>
-          <input class="field-input" id="token" type="password" placeholder="Paste your token here" autocomplete="off" />
-        </div>
-        <button class="login-btn" id="loginBtn" onclick="login()">Connect to Canvas</button>
-        <div id="loginStatus"></div>
-      </div>
     </div>
   </div>
 </div>
@@ -809,8 +795,29 @@ body {
       <!-- Canvas -->
       <div class="settings-card">
         <div class="settings-head">Canvas Connection</div>
-        <div class="settings-row"><span class="settings-key">School domain</span><span class="settings-val" id="settingsDomain">—</span></div>
-        <div class="settings-row"><span class="settings-key">API token</span><span class="settings-val">Connected</span></div>
+        <div id="canvasConnectForm">
+          <div class="ic-connect-body">
+            <p class="ic-connect-desc">Connect Canvas to see upcoming assignments, due dates, and grade predictions for assignments not yet in IC.</p>
+            <div class="field">
+              <label class="field-label" for="cvDomain">School domain</label>
+              <input class="field-input" id="cvDomain" type="text" placeholder="school.instructure.com" autocomplete="off" />
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label class="field-label" for="cvToken">Canvas API token</label>
+              <input class="field-input" id="cvToken" type="password" placeholder="Paste your token here" autocomplete="off" />
+            </div>
+            <button class="ic-connect-btn" id="canvasConnectBtn" onclick="connectCanvas()">Connect Canvas</button>
+            <div id="canvasConnectStatus"></div>
+          </div>
+        </div>
+        <div id="canvasConnectedState" style="display:none">
+          <div class="settings-row"><span class="settings-key">Status</span><span class="settings-val ok">Connected</span></div>
+          <div class="settings-row"><span class="settings-key">Domain</span><span class="settings-val" id="settingsDomain">—</span></div>
+          <div class="settings-row">
+            <span class="settings-key"></span>
+            <button class="ic-disconnect-btn" onclick="disconnectCanvas()">Disconnect</button>
+          </div>
+        </div>
       </div>
 
       <!-- Infinite Campus -->
@@ -1169,6 +1176,8 @@ async function toggleICGrades() {
 }
 
 /* ── Auth ───────────────────────────────────────────── */
+let _canvas = { connected: false, domain: null };
+
 async function authLogin() {
   const email = document.getElementById('email').value.trim();
   const pass  = document.getElementById('password').value.trim();
@@ -1178,7 +1187,7 @@ async function authLogin() {
   const data = await res.json();
   if (!res.ok) { st.className='error'; st.textContent=data.error; return; }
   userToken = data.token;
-  await loadSavedCanvas();
+  await enterApp();
 }
 
 async function authSignup() {
@@ -1192,82 +1201,100 @@ async function authSignup() {
   st.className='ok'; st.textContent='Account created. Check your email, then sign in.';
 }
 
-async function loadSavedCanvas() {
-  const res  = await fetch('/api/load_canvas', { headers:{'Authorization':'Bearer '+userToken} });
-  const data = await res.json();
-  if (data.canvas_domain && data.canvas_token) {
-    document.getElementById('domain').value = data.canvas_domain;
-    document.getElementById('token').value  = data.canvas_token;
-    const ok = await login();
-    if (!ok) {
-      // Token invalid or expired — drop to canvas step so user can fix it
-      document.getElementById('authStep').style.display   = 'none';
-      document.getElementById('canvasStep').style.display = 'block';
-    }
-  } else {
-    document.getElementById('authStep').style.display   = 'none';
-    document.getElementById('canvasStep').style.display = 'block';
-  }
+async function enterApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display         = 'block';
+  const dash    = document.getElementById('page-dashboard');
+  const dashNav = document.querySelector('[data-page="dashboard"]');
+  dash.classList.add('active');
+  if (dashNav) dashNav.classList.add('active');
+  animateSidebar();
+  await loadICStatus();
+  renderGrades(window._courses || []);
+  renderAssign();
+  renderDash();
+  initCalendar();
+  loadSavedCanvas(); // silent background — does not block app entry
 }
 
-async function login() {
-  const domain = document.getElementById('domain').value.trim().replace('https://','').replace(/\/$/,'');
-  const token  = document.getElementById('token').value.trim();
-  const btn    = document.getElementById('loginBtn');
-  const status = document.getElementById('loginStatus');
-  if (!domain||!token) { status.className='error'; status.textContent='Both fields are required.'; return; }
+async function loadSavedCanvas() {
+  try {
+    const res  = await fetch('/api/load_canvas', { headers:{'Authorization':'Bearer '+userToken} });
+    const data = await res.json();
+    if (data.canvas_domain && data.canvas_token) {
+      await _applyCanvasCreds(data.canvas_domain, data.canvas_token, false);
+    }
+  } catch(e) { /* silent */ }
+}
+
+async function connectCanvas() {
+  const domain = document.getElementById('cvDomain').value.trim().replace('https://','').replace(/\/$/,'');
+  const token  = document.getElementById('cvToken').value.trim();
+  const btn    = document.getElementById('canvasConnectBtn');
+  const status = document.getElementById('canvasConnectStatus');
+  if (!domain || !token) { status.className='error'; status.textContent='Both fields are required.'; return; }
   btn.disabled = true;
   status.className = 'loading'; status.innerHTML = '<span class="spinner"></span>Connecting…';
+  const ok = await _applyCanvasCreds(domain, token, true);
+  if (ok) { status.className='ok'; status.textContent='Connected!'; }
+  else    { status.className='error'; status.textContent='Connection failed — check your domain and token.'; }
+  btn.disabled = false;
+}
+
+async function _applyCanvasCreds(domain, token, save) {
   try {
     const res  = await fetch('/api/assignments', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({domain,token}) });
     const data = await res.json();
-    if (!res.ok) { status.className='error'; status.textContent=data.error||'Connection failed.'; btn.disabled=false; return false; }
-
+    if (!res.ok) return false;
     all = data.assignments.map(a => ({...a, quarter: getQ(a.due_raw)}));
-
-    if (userToken) {
+    _canvas = { connected: true, domain };
+    if (save && userToken) {
       await fetch('/api/save_canvas', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+userToken}, body:JSON.stringify({domain,token}) });
     }
-
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('app').style.display         = 'block';
-    document.getElementById('settingsDomain').textContent = domain;
-
-    const dash    = document.getElementById('page-dashboard');
-    const dashNav = document.querySelector('[data-page="dashboard"]');
-    dash.classList.add('active');
-    if (dashNav) dashNav.classList.add('active');
-
-    animateSidebar();
-    renderDash();
+    document.getElementById('settingsDomain').textContent         = domain;
+    document.getElementById('canvasConnectForm').style.display    = 'none';
+    document.getElementById('canvasConnectedState').style.display = 'block';
     renderAssign();
-
-    // Load IC status first, then render grades with correct source
-    await loadICStatus();
+    renderDash();
     renderGrades(data.courses || []);
-    initCalendar();
     return true;
-  } catch(e) {
-    status.className='error'; status.textContent='Could not reach backend. Is main.py running?';
-    btn.disabled=false;
-    return false;
+  } catch(e) { return false; }
+}
+
+async function disconnectCanvas() {
+  all = []; _canvas = { connected: false, domain: null }; window._courses = [];
+  if (userToken) {
+    await fetch('/api/save_canvas', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+userToken}, body:JSON.stringify({domain:'',token:''}) });
   }
+  document.getElementById('canvasConnectForm').style.display    = 'block';
+  document.getElementById('canvasConnectedState').style.display = 'none';
+  document.getElementById('cvDomain').value = '';
+  document.getElementById('cvToken').value  = '';
+  renderAssign(); renderDash(); renderGrades([]);
 }
 
 function logout() {
   all = []; calSelectedDay = null;
-  _ic = { connected:false, enabled:false, domain:null, grades:[], synced_at:null };
+  _ic     = { connected:false, enabled:false, domain:null, grades:[], synced_at:null };
+  _canvas = { connected:false, domain:null };
+  window._courses = [];
   document.getElementById('app').style.display         = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('loginStatus').textContent   = '';
-  document.getElementById('loginBtn').disabled         = false;
-  document.getElementById('domain').value = '';
-  document.getElementById('token').value  = '';
+  document.getElementById('authStep').style.display    = 'block';
+  document.getElementById('authStatus').textContent    = '';
+  document.getElementById('email').value    = '';
+  document.getElementById('password').value = '';
   document.getElementById('icUsername').value = '';
   document.getElementById('icPassword').value = '';
   document.getElementById('icDomain').value   = '';
   document.getElementById('icConnectStatus').textContent = '';
   document.getElementById('icConnectBtn').disabled = false;
+  document.getElementById('canvasConnectForm').style.display    = 'block';
+  document.getElementById('canvasConnectedState').style.display = 'none';
+  document.getElementById('cvDomain').value = '';
+  document.getElementById('cvToken').value  = '';
+  userToken = null;
+  _applyICStatus();
   resetSidebar();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active','page-anim'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
