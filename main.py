@@ -382,9 +382,11 @@ def _normalize_ic_api(data, person_id=None) -> list:
     """
     courses = []
 
-    # Flatten enrollment → terms → courses
+    # Flatten enrollment → terms → courses, keeping only the active term
     enrollments = data if isinstance(data, list) else [data]
     flat_courses = []
+    today = datetime.now(timezone.utc).date()
+
     for enrollment in enrollments:
         if not isinstance(enrollment, dict):
             continue
@@ -586,10 +588,12 @@ def sync_ic_now():
         return jsonify({'error': 'Unauthorized'}), 401
 
     res = supabase.table('users').select('ic_domain, ic_username, ic_password').eq('id', uid).execute()
-    if not res.data or not res.data[0].get('ic_domain'):
+    if not res.data:
         return jsonify({'error': 'IC not connected'}), 400
-
     row = res.data[0]
+    if not row.get('ic_domain') or not row.get('ic_password'):
+        return jsonify({'error': 'IC credentials missing — reconnect Infinite Campus in Settings.'}), 400
+
     ok = sync_user_ic(uid, row['ic_domain'], row['ic_username'], row['ic_password'])
     if not ok:
         return jsonify({'error': 'Sync failed — check credentials or IC domain'}), 400
