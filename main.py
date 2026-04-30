@@ -202,28 +202,55 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
                     log.info(f'IC students {path}: {e}')
 
             log.info(f'IC personID={person_id}')
-            grade_paths = []
-            if person_id:
-                grade_paths += [
-                    f'/campus/api/portal/students/{person_id}/grades',
-                    f'/campus/api/portal/grades?personID={person_id}',
-                    f'/campus/api/portal/students/{person_id}/roster?_expand=%7Bsection%7D',
-                    f'/campus/api/portal/students/{person_id}/term',
-                    f'/campus/api/portal/students/{person_id}/schoolYears',
-                ]
-            grade_paths += ['/campus/api/portal/grades', '/campus/api/portal/students/courses']
 
-            for path in grade_paths:
+            # ── Intercept IC's own API calls on the grades page ───────────────
+            # All standard endpoint paths 404 for this district — instead we
+            # let the IC portal load naturally and capture whatever JSON APIs
+            # it fires internally. Those are guaranteed to work.
+            grade_data_map = {}
+
+            def _capture_json(response):
+                if response.status != 200:
+                    return
+                ct = response.headers.get('content-type', '')
+                if 'json' not in ct:
+                    return
                 try:
-                    page.goto(f'{base}{path}', wait_until='load', timeout=20000)
-                    raw = page.inner_text('body').strip()
-                    log.info(f'IC grades {path} body[:400]={raw[:400]}')
-                    courses = _normalize_ic_api(json.loads(raw), person_id)
-                    if courses:
-                        log.info(f'IC grades: {len(courses)} courses from {path}')
+                    grade_data_map[response.url] = response.json()
+                    log.info(f'IC intercepted API: {response.url}')
+                except Exception:
+                    pass
+
+            page.on('response', _capture_json)
+
+            # Navigate to the grades section — triggers IC's internal API calls
+            for grades_url in [
+                f'{base}/campus/nav-wrapper/student/portal/student/grade',
+                f'{base}/campus/nav-wrapper/student/portal/student/grades',
+                f'{base}/campus/portal/portalOutlineWrapper.xsl?x=portal.PortalOutline&contactID={person_id or ""}&lang=en',
+            ]:
+                try:
+                    page.goto(grades_url, wait_until='networkidle', timeout=30000)
+                    log.info(f'IC grades page loaded: {grades_url} → intercepted {len(grade_data_map)} JSON APIs')
+                    if grade_data_map:
                         break
                 except Exception as e:
-                    log.info(f'IC grades {path}: {e}')
+                    log.info(f'IC grades page {grades_url}: {e}')
+
+            # Log all intercepted APIs so we can see what IC actually returns
+            for url, body in grade_data_map.items():
+                log.info(f'IC API {url} body[:300]={str(body)[:300]}')
+
+            # Try to parse grades from any intercepted response
+            for url, body in grade_data_map.items():
+                try:
+                    parsed = _normalize_ic_api(body, person_id)
+                    if parsed:
+                        courses = parsed
+                        log.info(f'IC grades: {len(courses)} courses from intercepted {url}')
+                        break
+                except Exception as e:
+                    log.info(f'IC normalize {url}: {e}')
 
             if not courses:
                 try:
