@@ -1130,7 +1130,22 @@ async function syncICNow() {
   try {
     const res  = await fetch('/api/sync_ic', { method: 'POST', headers: { 'Authorization': 'Bearer ' + userToken } });
     const data = await res.json();
-    if (!res.ok) { st.style.color = 'var(--red)'; st.textContent = data.error || 'Sync failed.'; btn.disabled = false; return; }
+    if (!res.ok) {
+      if (data.error === 'reconnect') {
+        st.style.color = 'var(--red)';
+        st.textContent = data.message || 'Re-enter IC credentials.';
+        // Navigate to Settings and show connect form
+        const settingsNav = document.querySelector('[data-page="settings"]');
+        if (settingsNav) showPage('settings', settingsNav);
+        _ic.connected = false;
+        _applyICStatus();
+        const csEl = document.getElementById('icConnectStatus');
+        if (csEl) { csEl.style.color = 'var(--red)'; csEl.textContent = data.message || 'Please re-enter your IC password.'; }
+      } else {
+        st.style.color = 'var(--red)'; st.textContent = data.error || 'Sync failed.';
+      }
+      btn.disabled = false; return;
+    }
     _ic.grades    = data.grades || [];
     _ic.synced_at = data.synced_at;
     st.style.color = 'var(--green)';
@@ -1319,11 +1334,20 @@ function renderDash() {
 
 function _fillAssignmentsFromIC() {
   if (all.length || !_ic.connected || !_ic.enabled) return;
+  // Only use the most recent term (Q4 > Q3 > Q2 > Q1)
+  const termOrder   = ['Q4','Q3','Q2','Q1','Final'];
+  const currentTerm = termOrder.find(t => (_ic.grades || []).some(c => c.term === t));
+  if (!currentTerm) return;
   const now = new Date();
   const pending = [];
-  (_ic.grades || []).forEach(course => {
+  (_ic.grades || []).filter(c => c.term === currentTerm).forEach(course => {
     (course.assignments || []).forEach(a => {
       if (!a.missing && !a.notGraded && !a.incomplete) return;
+      // Skip assignments due more than 14 days ago — stale missing from old quarters
+      if (a.due) {
+        const daysOld = (now - new Date(a.due)) / 86400000;
+        if (daysOld > 14) return;
+      }
       const dueDate    = a.due ? new Date(a.due) : null;
       const hoursUntil = dueDate ? (dueDate - now) / 3600000 : null;
       pending.push({
@@ -1343,7 +1367,12 @@ function _fillAssignmentsFromIC() {
       });
     });
   });
-  if (pending.length) { all = pending; renderAssign(); renderDash(); }
+  if (pending.length) {
+    all = pending;
+    sf  = 'all'; // show everything, not just 'upcoming'
+    renderAssign();
+    renderDash();
+  }
 }
 
 function renderAssign() {
