@@ -657,11 +657,15 @@ def sync_ic_now():
         return jsonify({'error': 'Unauthorized'}), 401
 
     res = supabase.table('users').select('ic_domain, ic_username, ic_password').eq('id', uid).execute()
-    if not res.data:
-        return jsonify({'error': 'IC not connected'}), 400
+    if not res.data or not res.data[0].get('ic_domain') or not res.data[0].get('ic_password'):
+        return jsonify({'error': 'reconnect', 'message': 'IC credentials missing — re-enter them in Settings.'}), 400
     row = res.data[0]
-    if not row.get('ic_domain') or not row.get('ic_password'):
-        return jsonify({'error': 'IC credentials missing — reconnect Infinite Campus in Settings.'}), 400
+
+    # Verify the stored password can actually be decrypted (CREDENTIAL_KEY may have changed on restart)
+    try:
+        decrypt_val(row['ic_password'])
+    except Exception:
+        return jsonify({'error': 'reconnect', 'message': 'Stored IC credentials are invalid (server key changed). Re-enter your password in Settings.'}), 400
 
     ok = sync_user_ic(uid, row['ic_domain'], row['ic_username'], row['ic_password'])
     if not ok:
