@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timezone
 from urllib.parse import urljoin
 import os
+import json
 import logging
 import atexit
 from cryptography.fernet import Fernet
@@ -56,12 +57,12 @@ def _make_session() -> requests.Session:
     sess.headers['User-Agent'] = USER_AGENT
     return sess
 
-def ncedcloud_authenticate(username: str, password: str, ic_domain: str) -> requests.Session:
+def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
     """
-    NCEDCloud → Infinite Campus SSO via Playwright headless browser.
-    Handles the RapidIdentity Ember SPA which requires JS execution to
-    complete the SAML assertion delivery back to IC.
-    Raises ValueError on bad credentials, RuntimeError on infra issues.
+    NCEDCloud → Infinite Campus SSO + grade fetch, all via one Playwright session.
+    Fetches grades while the browser is still open — avoids cookie transfer issues
+    (IC ties sessions to browser fingerprint server-side).
+    Returns list of course dicts. Raises ValueError on bad credentials.
     """
     import re as _re
     from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
@@ -179,14 +180,61 @@ def ncedcloud_authenticate(username: str, password: str, ic_domain: str) -> requ
                     raise ValueError('Invalid NCEDCloud username or password.')
                 raise RuntimeError('NCEDCloud SSO timed out — may still be on IDP after 90s.')
 
-            # Extract cookies → requests.Session
-            pw_cookies = context.cookies()
-            sess = _make_session()
-            for c in pw_cookies:
-                sess.cookies.set(c['name'], c['value'],
-                                 domain=c.get('domain', '').lstrip('.'))
-            log.info(f'Playwright: extracted {len(pw_cookies)} cookies')
-            return sess
+            # ── Fetch grades while browser session is still live ──────────────
+            # IC validates sessions server-side (browser fingerprint bound),
+            # so we fetch via Playwright instead of transferring cookies to requests.
+            base = f'https://{ic_domain}'
+            courses = []
+            person_id = None
+
+            for path in ['/campus/api/portal/students', '/campus/api/portal/student']:
+                try:
+                    page.goto(f'{base}{path}', wait_until='load', timeout=20000)
+                    raw = page.inner_text('body').strip()
+                    log.info(f'IC students {path} body[:200]={raw[:200]}')
+                    d = json.loads(raw)
+                    if isinstance(d, list): d = d[0] if d else {}
+                    person_id = (d.get('personID') or d.get('id') or
+                                 d.get('studentID') or d.get('student', {}).get('personID'))
+                    if person_id:
+                        break
+                except Exception as e:
+                    log.info(f'IC students {path}: {e}')
+
+            log.info(f'IC personID={person_id}')
+            grade_paths = []
+            if person_id:
+                grade_paths += [
+                    f'/campus/api/portal/students/{person_id}/grades',
+                    f'/campus/api/portal/grades?personID={person_id}',
+                    f'/campus/api/portal/students/{person_id}/roster?_expand=%7Bsection%7D',
+                    f'/campus/api/portal/students/{person_id}/term',
+                    f'/campus/api/portal/students/{person_id}/schoolYears',
+                ]
+            grade_paths += ['/campus/api/portal/grades', '/campus/api/portal/students/courses']
+
+            for path in grade_paths:
+                try:
+                    page.goto(f'{base}{path}', wait_until='load', timeout=20000)
+                    raw = page.inner_text('body').strip()
+                    log.info(f'IC grades {path} body[:400]={raw[:400]}')
+                    courses = _normalize_ic_api(json.loads(raw), person_id)
+                    if courses:
+                        log.info(f'IC grades: {len(courses)} courses from {path}')
+                        break
+                except Exception as e:
+                    log.info(f'IC grades {path}: {e}')
+
+            if not courses:
+                try:
+                    page.goto(f'{base}/campus/portal/grades.jsp', wait_until='load', timeout=20000)
+                    courses = _parse_ic_html(page.content())
+                    log.info(f'IC HTML parse → {len(courses)} courses')
+                except Exception as e:
+                    log.info(f'IC HTML fallback: {e}')
+
+            log.info(f'IC Playwright pull complete: {len(courses)} courses')
+            return courses
 
         except (ValueError, RuntimeError):
             raise
@@ -427,8 +475,7 @@ def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str) 
     """Re-auth and refresh IC grades for a single user. Returns True on success."""
     try:
         password = decrypt_val(encrypted_pw)
-        sess = ncedcloud_authenticate(ic_username, password, ic_domain)
-        grades = ic_pull_grades(sess, ic_domain)
+        grades = playwright_ic_sync(ic_username, password, ic_domain)
         supabase.table('users').update({
             'ic_grades_cache': grades,
             'ic_synced_at': datetime.now(timezone.utc).isoformat(),
@@ -483,8 +530,7 @@ def connect_ic():
 
     # Validate credentials + get initial grade snapshot
     try:
-        sess   = ncedcloud_authenticate(username, password, ic_domain)
-        grades = ic_pull_grades(sess, ic_domain)
+        grades = playwright_ic_sync(username, password, ic_domain)
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except RuntimeError as e:
