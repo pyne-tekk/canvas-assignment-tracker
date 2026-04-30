@@ -545,6 +545,10 @@ body {
 .asgn-score-wrap { text-align: right; flex-shrink: 0; }
 .asgn-score { font-size: 14px; font-weight: 600; letter-spacing: -0.3px; }
 .asgn-max   { font-size: 11px; color: var(--text3); }
+.asgn-badge { display: inline-block; font-size: 9.5px; font-weight: 600; padding: 1px 5px; border-radius: 2px; letter-spacing: 0.3px; vertical-align: middle; }
+.badge-missing { background: var(--red-dim);    color: var(--red);    }
+.badge-late    { background: var(--orange-dim); color: var(--orange); }
+.badge-dropped { background: oklch(100% 0 0 / 0.06); color: var(--text3); }
 
 .drawer-empty { padding: 40px 24px; text-align: center; color: var(--text3); font-size: 13px; line-height: 1.6; }
 .drawer-loading { padding: 32px 24px; text-align: center; color: var(--text3); font-size: 13px; }
@@ -1261,6 +1265,7 @@ function renderGrades(courseList) {
     if (finalBtn) finalBtn.style.display = _ic.grades.some(c => c.term === 'Final') ? '' : 'none';
 
     const icFiltered = gqf === 'all' ? _ic.grades : _ic.grades.filter(c => c.term === gqf);
+    window._icFiltered = icFiltered;
     document.getElementById('gradeGrid').innerHTML = icFiltered.map(c => {
       const pct    = Math.round(c.grade);
       const col    = gradeColor(pct);
@@ -1416,7 +1421,7 @@ function renderDrawerAssignments(course) {
 
   if (!assignments.length) {
     body.innerHTML = `<div class="drawer-empty">
-      No assignment detail available.<br>
+      No assignments found for this course.<br>
       <span style="font-size:11px;color:var(--text3);margin-top:6px;display:block">
         IC may not expose per-assignment data for this course.
       </span>
@@ -1424,36 +1429,48 @@ function renderDrawerAssignments(course) {
     return;
   }
 
-  // Group by category
-  const byCat = {};
-  assignments.forEach(a => {
-    const cat = a.category || 'Other';
-    (byCat[cat] = byCat[cat] || []).push(a);
+  const sorted = [...assignments].sort((a, b) => {
+    if (!a.due && !b.due) return 0;
+    if (!a.due) return 1;
+    if (!b.due) return -1;
+    return new Date(b.due) - new Date(a.due);
   });
 
-  let html = '';
-  for (const [cat, items] of Object.entries(byCat)) {
-    html += `<div class="drawer-section-head">${cat}</div>`;
-    items.forEach(a => {
-      const hasScore   = a.score !== null && a.score !== undefined;
-      const hasMax     = a.max   !== null && a.max   !== undefined;
-      const pct        = a.percent != null ? Math.round(a.percent) : (hasScore && hasMax && a.max > 0 ? Math.round((a.score / a.max) * 100) : null);
-      const scoreColor = pct == null ? 'var(--text)' : gradeColor(pct);
-      const scoreText  = hasScore ? (hasMax ? `${a.score} / ${a.max}` : `${a.score}`) : '—';
-      const pctText    = pct != null ? `${pct}%` : '';
-      const dueText    = a.due ? `Due ${a.due}` : '';
-      html += `<div class="asgn-row">
-        <div>
-          <div class="asgn-name">${a.name}</div>
-          ${dueText ? `<div class="asgn-due">${dueText}</div>` : ''}
-        </div>
-        <div class="asgn-score-wrap">
-          <div class="asgn-score" style="color:${scoreColor}">${scoreText}</div>
-          ${pctText ? `<div class="asgn-max">${pctText}</div>` : ''}
-        </div>
-      </div>`;
-    });
+  function fmtDate(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
+
+  let html = '';
+  sorted.forEach(a => {
+    const hasScore   = a.score !== null && a.score !== undefined;
+    const hasMax     = a.max   !== null && a.max   !== undefined;
+    const pct        = a.pct != null ? Math.round(a.pct)
+                     : (hasScore && hasMax && a.max > 0 ? Math.round(parseFloat(a.score) / a.max * 100) : null);
+    const scoreColor = (a.notGraded || pct == null) ? 'var(--text3)' : gradeColor(pct);
+    const scoreText  = a.notGraded ? 'Ungraded'
+                     : hasScore    ? (hasMax ? `${parseFloat(a.score).toFixed(0)} / ${a.max}` : `${a.score}`)
+                     : '—';
+    const pctText    = (!a.notGraded && pct != null) ? `${pct}%` : '';
+
+    const badges = [];
+    if (a.missing)    badges.push('<span class="asgn-badge badge-missing">Missing</span>');
+    if (a.late)       badges.push('<span class="asgn-badge badge-late">Late</span>');
+    if (a.dropped)    badges.push('<span class="asgn-badge badge-dropped">Dropped</span>');
+    if (a.incomplete) badges.push('<span class="asgn-badge badge-dropped">Incomplete</span>');
+
+    const dueText = fmtDate(a.due);
+    html += `<div class="asgn-row">
+      <div style="min-width:0">
+        <div class="asgn-name">${a.name}</div>
+        <div class="asgn-due">${dueText}${badges.length ? ' &nbsp;' + badges.join(' ') : ''}</div>
+      </div>
+      <div class="asgn-score-wrap">
+        <div class="asgn-score" style="color:${scoreColor}">${scoreText}</div>
+        ${pctText ? `<div class="asgn-max">${pctText}</div>` : ''}
+      </div>
+    </div>`;
+  });
 
   body.innerHTML = html;
 }
@@ -1461,8 +1478,9 @@ function renderDrawerAssignments(course) {
 // Make IC grade cards open drawer on click
 function _bindGradeCardClicks() {
   if (!(_ic.connected && _ic.enabled && _ic.grades.length > 0)) return;
+  const list = window._icFiltered || _ic.grades;
   document.querySelectorAll('#gradeGrid .grade-card').forEach((card, i) => {
-    const course = _ic.grades[i];
+    const course = list[i];
     if (!course) return;
     card.onclick = (e) => { e.stopPropagation(); openDrawer(course); };
   });
