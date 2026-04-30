@@ -549,6 +549,29 @@ body {
 .badge-missing { background: var(--red-dim);    color: var(--red);    }
 .badge-late    { background: var(--orange-dim); color: var(--orange); }
 .badge-dropped { background: oklch(100% 0 0 / 0.06); color: var(--text3); }
+.asgn-empty-cat { font-size: 12px; color: var(--text3); padding: 6px 0 4px; font-style: italic; }
+
+/* GPA strip */
+.gpa-strip { display: flex; gap: 10px; padding: 0 0 18px; }
+.gpa-card  { flex: 1; background: oklch(100% 0 0 / 0.03); border: 1px solid oklch(100% 0 0 / 0.07); border-radius: 8px; padding: 12px 16px; }
+.gpa-label { font-size: 9.5px; font-weight: 600; color: var(--text3); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 5px; }
+.gpa-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; color: var(--text); }
+
+/* Category weight chips */
+.cat-weight-bar { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 0 6px; }
+.cat-chip { font-size: 11px; padding: 3px 9px; border-radius: 3px; background: oklch(100% 0 0 / 0.04); border: 1px solid oklch(100% 0 0 / 0.08); color: var(--text2); }
+.cat-chip strong { color: var(--text); font-weight: 600; }
+
+/* Grade predictor */
+.predict-banner { font-size: 12.5px; color: var(--text2); padding: 10px 0 14px; line-height: 1.5; }
+.predict-banner strong { color: var(--text); font-weight: 600; }
+.predict-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid oklch(100% 0 0 / 0.06); }
+.predict-row:last-child { border-bottom: none; }
+.predict-slider-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 90px; }
+.predict-slider { width: 88px; accent-color: var(--green); cursor: pointer; }
+.predict-score { font-size: 12px; font-weight: 600; color: var(--text); text-align: right; }
+.predict-section-head { font-size: 9.5px; font-weight: 600; color: var(--green); letter-spacing: 0.9px; text-transform: uppercase; padding: 18px 0 4px; border-top: 1px solid oklch(100% 0 0 / 0.07); margin-top: 8px; }
+.predict-note { font-size: 11px; color: var(--text3); padding: 6px 0; }
 
 .drawer-empty { padding: 40px 24px; text-align: center; color: var(--text3); font-size: 13px; line-height: 1.6; }
 .drawer-loading { padding: 32px 24px; text-align: center; color: var(--text3); font-size: 13px; }
@@ -734,6 +757,16 @@ body {
         <button class="filter-btn" id="gqf-Q4" onclick="setGQF('Q4')">Q4</button>
         <button class="filter-btn" id="gqf-Final" onclick="setGQF('Final')">Final</button>
       </div>
+      <div id="gpaStrip" style="display:none" class="gpa-strip">
+        <div class="gpa-card">
+          <div class="gpa-label">Weighted GPA</div>
+          <div class="gpa-value" id="gpaWeighted">—</div>
+        </div>
+        <div class="gpa-card">
+          <div class="gpa-label">Unweighted GPA</div>
+          <div class="gpa-value" id="gpaUnweighted">—</div>
+        </div>
+      </div>
       <div class="grade-grid" id="gradeGrid"></div>
     </div>
 
@@ -884,6 +917,67 @@ function getQ(raw) {
   const d = new Date(raw);
   for (const [q,[s,e]] of Object.entries(quarters)) if (d >= s && d <= e) return q;
   return null;
+}
+
+function computeGPA(grades) {
+  const valid = grades.filter(c => c.grade != null && c.grade > 0);
+  if (!valid.length) return { weighted: null, unweighted: null };
+  let wSum = 0, uwSum = 0;
+  valid.forEach(c => {
+    const p = c.grade;
+    const pts = p >= 90 ? 4.0 : p >= 80 ? 3.0 : p >= 70 ? 2.0 : p >= 60 ? 1.0 : 0.0;
+    const n   = c.name.toLowerCase();
+    const bonus = (n.includes('ap ') || n.startsWith('ap') || / ap$/.test(n)) ? 1.0
+                : n.includes('honors') ? 0.5 : 0.0;
+    uwSum += pts;
+    wSum  += pts + bonus;
+  });
+  const n = valid.length;
+  return { weighted: (wSum / n).toFixed(2), unweighted: (uwSum / n).toFixed(2) };
+}
+
+function predictGrade(cats, hypotheticals) {
+  let weightedSum = 0, totalUsedWeight = 0;
+  cats.forEach(cat => {
+    const scored = cat.assignments.filter(a => !a.notGraded && !a.missing && !a.dropped && a.score != null);
+    let earned   = scored.reduce((s, a) => s + parseFloat(a.score  || 0), 0);
+    let possible = scored.reduce((s, a) => s + parseFloat(a.max    || 100), 0);
+    hypotheticals.forEach(h => {
+      if (h.cat && h.cat.toLowerCase() === cat.name.toLowerCase()) {
+        earned   += h.score;
+        possible += 100;
+      }
+    });
+    if (possible > 0) {
+      weightedSum      += (earned / possible * 100) * cat.weight;
+      totalUsedWeight  += cat.weight;
+    }
+  });
+  return totalUsedWeight > 0 ? Math.round(weightedSum / totalUsedWeight) : null;
+}
+
+function updatePrediction() {
+  const course = window._drawerCourse;
+  if (!course) return;
+  const catsByTerm = course.categories_by_term || {};
+  const term = (gqf !== 'all' && catsByTerm[gqf]) ? gqf
+             : ['Q4','Q3','Q2','Q1','Final'].find(t => catsByTerm[t]) || null;
+  const cats = term ? (catsByTerm[term] || []) : [];
+  if (!cats.length) return;
+
+  const hypotheticals = [];
+  document.querySelectorAll('.predict-slider').forEach((slider, i) => {
+    const score = parseInt(slider.value);
+    document.getElementById('ps-' + i).textContent = score + '%';
+    hypotheticals.push({ cat: slider.dataset.cat, score });
+  });
+
+  const predicted = predictGrade(cats, hypotheticals);
+  const el = document.getElementById('predictResult');
+  if (el && predicted !== null) {
+    el.textContent   = predicted + '%';
+    el.style.color   = gradeColor(predicted);
+  }
 }
 
 function gradeColor(p) {
@@ -1266,6 +1360,20 @@ function renderGrades(courseList) {
 
     const icFiltered = gqf === 'all' ? _ic.grades : _ic.grades.filter(c => c.term === gqf);
     window._icFiltered = icFiltered;
+
+    // GPA strip
+    const gpaStrip = document.getElementById('gpaStrip');
+    if (gpaStrip) {
+      const gpa = computeGPA(icFiltered);
+      if (gpa.weighted !== null) {
+        document.getElementById('gpaWeighted').textContent   = gpa.weighted;
+        document.getElementById('gpaUnweighted').textContent = gpa.unweighted;
+        gpaStrip.style.display = 'flex';
+      } else {
+        gpaStrip.style.display = 'none';
+      }
+    }
+
     document.getElementById('gradeGrid').innerHTML = icFiltered.map(c => {
       const pct    = Math.round(c.grade);
       const col    = gradeColor(pct);
@@ -1287,6 +1395,8 @@ function renderGrades(courseList) {
   }
 
   // Canvas grades
+  const gpaStripEl = document.getElementById('gpaStrip');
+  if (gpaStripEl) gpaStripEl.style.display = 'none';
   let filtered = courseList.filter(c=>c.grade!=null);
   if (gqf !== 'all') filtered = filtered.filter(c=>c.quarter===gqf);
   if (!filtered.length) {
@@ -1417,62 +1527,114 @@ function closeDrawer() {
 
 function renderDrawerAssignments(course) {
   const body = document.getElementById('drawerBody');
-  const assignments = course.assignments || [];
-
-  if (!assignments.length) {
-    body.innerHTML = `<div class="drawer-empty">
-      No assignments found for this course.<br>
-      <span style="font-size:11px;color:var(--text3);margin-top:6px;display:block">
-        IC may not expose per-assignment data for this course.
-      </span>
-    </div>`;
-    return;
-  }
-
-  const sorted = [...assignments].sort((a, b) => {
-    if (!a.due && !b.due) return 0;
-    if (!a.due) return 1;
-    if (!b.due) return -1;
-    return new Date(b.due) - new Date(a.due);
-  });
+  window._drawerCourse = course;
 
   function fmtDate(iso) {
     if (!iso) return '';
     return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
-  let html = '';
-  sorted.forEach(a => {
+  function asgnRow(a) {
     const hasScore   = a.score !== null && a.score !== undefined;
     const hasMax     = a.max   !== null && a.max   !== undefined;
-    const pct        = a.pct != null ? Math.round(a.pct)
-                     : (hasScore && hasMax && a.max > 0 ? Math.round(parseFloat(a.score) / a.max * 100) : null);
+    const pct        = a.pct  != null ? Math.round(parseFloat(a.pct))
+                     : (hasScore && hasMax && parseFloat(a.max) > 0
+                        ? Math.round(parseFloat(a.score) / parseFloat(a.max) * 100) : null);
     const scoreColor = (a.notGraded || pct == null) ? 'var(--text3)' : gradeColor(pct);
     const scoreText  = a.notGraded ? 'Ungraded'
                      : hasScore    ? (hasMax ? `${parseFloat(a.score).toFixed(0)} / ${a.max}` : `${a.score}`)
                      : '—';
     const pctText    = (!a.notGraded && pct != null) ? `${pct}%` : '';
-
-    const badges = [];
+    const badges     = [];
     if (a.missing)    badges.push('<span class="asgn-badge badge-missing">Missing</span>');
     if (a.late)       badges.push('<span class="asgn-badge badge-late">Late</span>');
     if (a.dropped)    badges.push('<span class="asgn-badge badge-dropped">Dropped</span>');
     if (a.incomplete) badges.push('<span class="asgn-badge badge-dropped">Incomplete</span>');
-
-    const dueText = fmtDate(a.due);
-    html += `<div class="asgn-row">
+    return `<div class="asgn-row">
       <div style="min-width:0">
         <div class="asgn-name">${a.name}</div>
-        <div class="asgn-due">${dueText}${badges.length ? ' &nbsp;' + badges.join(' ') : ''}</div>
+        <div class="asgn-due">${fmtDate(a.due)}${badges.length ? ' &nbsp;' + badges.join(' ') : ''}</div>
       </div>
       <div class="asgn-score-wrap">
         <div class="asgn-score" style="color:${scoreColor}">${scoreText}</div>
         ${pctText ? `<div class="asgn-max">${pctText}</div>` : ''}
       </div>
     </div>`;
+  }
+
+  // Pick categories for the active term
+  const catsByTerm = course.categories_by_term || {};
+  const term = (gqf !== 'all' && catsByTerm[gqf]) ? gqf
+             : ['Q4','Q3','Q2','Q1','Final'].find(t => catsByTerm[t]) || null;
+  const cats = term ? (catsByTerm[term] || []) : [];
+
+  // Canvas upcoming assignments not yet graded in IC (exact name match)
+  // Only exclude assignments that are actually scored — notGraded/incomplete still go to predictor
+  const icNames = new Set(cats.flatMap(c => c.assignments.filter(a => !a.notGraded && !a.incomplete && a.score != null).map(a => a.name)));
+  const upcoming = all.filter(a =>
+    a.course === course.name &&
+    !icNames.has(a.name) &&
+    !a.missing
+  );
+
+  if (!cats.length && !upcoming.length) {
+    body.innerHTML = `<div class="drawer-empty">No assignment data available.<br>
+      <span style="font-size:11px;color:var(--text3);margin-top:6px;display:block">Sync IC to load category detail.</span>
+    </div>`;
+    return;
+  }
+
+  let html = '';
+
+  // Category weight chips
+  if (cats.length) {
+    html += `<div class="cat-weight-bar">`;
+    cats.forEach(c => { html += `<span class="cat-chip">${c.name} <strong>${c.weight}%</strong></span>`; });
+    html += `</div>`;
+  }
+
+  // Assignments grouped by category
+  cats.forEach(cat => {
+    html += `<div class="drawer-section-head">${cat.name} · ${cat.weight}%</div>`;
+    const sorted = [...cat.assignments].sort((a, b) => {
+      if (!a.due && !b.due) return 0;
+      if (!a.due) return 1; if (!b.due) return -1;
+      return new Date(b.due) - new Date(a.due);
+    });
+    if (!sorted.length) {
+      html += `<div class="asgn-empty-cat">No graded assignments yet.</div>`;
+    } else {
+      sorted.forEach(a => { html += asgnRow(a); });
+    }
   });
 
+  // Grade predictor (Canvas upcoming)
+  if (upcoming.length) {
+    const currentPct = Math.round(course.grade);
+    html += `<div class="predict-section-head">Grade Predictor</div>`;
+    html += `<div class="predict-banner">
+      Current: <strong>${currentPct}%</strong> &nbsp;→&nbsp; Predicted: <strong id="predictResult" style="color:${gradeColor(currentPct)}">${currentPct}%</strong>
+    </div>`;
+    upcoming.forEach((a, i) => {
+      html += `<div class="predict-row">
+        <div style="min-width:0">
+          <div class="asgn-name">${a.name}</div>
+          <div class="asgn-due">${a.group ? a.group + ' · ' : ''}${a.due || 'No due date'}</div>
+        </div>
+        <div class="predict-slider-wrap">
+          <input type="range" class="predict-slider" min="0" max="100" value="100"
+            data-cat="${a.group || ''}" oninput="updatePrediction()">
+          <div class="predict-score" id="ps-${i}">100%</div>
+        </div>
+      </div>`;
+    });
+    if (upcoming.some(a => !a.group)) {
+      html += `<div class="predict-note">* Assignments without a recognized category are excluded from the prediction.</div>`;
+    }
+  }
+
   body.innerHTML = html;
+  if (upcoming.length) updatePrediction();
 }
 
 // Make IC grade cards open drawer on click
