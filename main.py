@@ -176,10 +176,15 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
             # Don't glob-match the final URL — the redirect chain can be multi-hop.
             # Instead, wait until we leave idp.ncedcloud.org, then let it settle.
             try:
-                page.wait_for_function(
-                    "!window.location.href.includes('idp.ncedcloud.org')",
-                    timeout=90000
-                )
+                # wait_for_function uses eval() which NCEDCloud CSP blocks.
+                # Poll page.url from Python instead — no JS eval needed.
+                import time as _time
+                for _i in range(90):
+                    if 'idp.ncedcloud.org' not in page.url:
+                        break
+                    _time.sleep(1)
+                else:
+                    raise TimeoutError('Still on NCEDCloud IDP after 90 s')
                 log.info(f'Playwright: left NCEDCloud IDP, now at {page.url}')
                 # Let any further redirect chain complete
                 try:
