@@ -113,10 +113,12 @@ def ncedcloud_authenticate(username: str, password: str, ic_domain: str) -> requ
             args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
         )
         context = browser.new_context(user_agent=USER_AGENT)
+        context.set_default_timeout(60000)  # 60s max per operation
         page = context.new_page()
         try:
             # Navigate to NCEDCloud SSO entry point
-            page.goto(sso_url, wait_until='networkidle')
+            # Use 'load' not 'networkidle' — Ember SPA fires constant XHR, networkidle never fires
+            page.goto(sso_url, wait_until='load', timeout=60000)
             log.info(f'Playwright: landed on {page.url}')
 
             if 'idp.ncedcloud.org' not in page.url:
@@ -138,21 +140,41 @@ def ncedcloud_authenticate(username: str, password: str, ic_domain: str) -> requ
             page.fill('input[type="password"]', password)
             log.info('Playwright: password filled')
 
-            # Submit password
+            # Submit password — try button first, fall back to Enter
             try:
                 page.locator('button:visible').first.click()
             except Exception:
                 page.keyboard.press('Enter')
+            log.info(f'Playwright: password submitted, current url={page.url}')
 
-            # Wait for redirect back to IC domain
+            # Wait for navigation away from NCEDCloud IDP.
+            # Don't glob-match the final URL — the redirect chain can be multi-hop.
+            # Instead, wait until we leave idp.ncedcloud.org, then let it settle.
             try:
-                page.wait_for_url(f'**{ic_domain}**')
+                page.wait_for_function(
+                    "!window.location.href.includes('idp.ncedcloud.org')",
+                    timeout=90000
+                )
+                log.info(f'Playwright: left NCEDCloud IDP, now at {page.url}')
+                # Let any further redirect chain complete
+                try:
+                    page.wait_for_load_state('networkidle', timeout=15000)
+                except Exception:
+                    pass  # networkidle may never fire on Ember; that's fine
+                log.info(f'Playwright: settled at {page.url}')
+                if ic_domain not in page.url:
+                    body_text = page.inner_text('body')
+                    if any(w in body_text.lower() for w in ('invalid', 'incorrect', 'failed', 'denied')):
+                        raise ValueError('Invalid NCEDCloud username or password.')
+                    raise RuntimeError(
+                        f'SSO did not land on IC domain. Ended at: {page.url}'
+                    )
                 log.info(f'Playwright: IC session established at {page.url}')
             except PWTimeout:
                 body_text = page.inner_text('body')
                 if any(w in body_text.lower() for w in ('invalid', 'incorrect', 'failed', 'denied')):
                     raise ValueError('Invalid NCEDCloud username or password.')
-                raise RuntimeError('NCEDCloud SSO timed out — check credentials or IC domain.')
+                raise RuntimeError('NCEDCloud SSO timed out — may still be on IDP after 90s.')
 
             # Extract cookies → requests.Session
             pw_cookies = context.cookies()
