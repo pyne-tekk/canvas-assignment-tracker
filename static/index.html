@@ -1250,6 +1250,7 @@ async function authLogin() {
   const data = await res.json();
   if (!res.ok) { st.className='error'; st.textContent=data.error; return; }
   userToken = data.token;
+  if (data.refresh_token) localStorage.setItem('slate_rt', data.refresh_token);
   await enterApp();
 }
 
@@ -1358,6 +1359,7 @@ function logout() {
   document.getElementById('cvDomain').value = '';
   document.getElementById('cvToken').value  = '';
   userToken = null;
+  localStorage.removeItem('slate_rt');
   _applyICStatus();
   resetSidebar();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active','page-anim'));
@@ -1645,6 +1647,19 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
   if (document.getElementById('loginScreen').style.display !== 'none') login();
 });
+
+(async () => {
+  const rt = localStorage.getItem('slate_rt');
+  if (!rt) return;
+  try {
+    const res  = await fetch('/api/refresh_token', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({refresh_token: rt}) });
+    const data = await res.json();
+    if (!res.ok) { localStorage.removeItem('slate_rt'); return; }
+    userToken = data.token;
+    if (data.refresh_token) localStorage.setItem('slate_rt', data.refresh_token);
+    await enterApp();
+  } catch { localStorage.removeItem('slate_rt'); }
+})();
 
 /* ── Assignment Drawer ───────────────────────────────── */
 let _drawerOpen = false;
