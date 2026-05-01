@@ -1435,7 +1435,7 @@ function assignCard(a) {
       </div>` : '';
   const showPredictor = a._source === 'ic' && a.score == null && a.group;
   const predictor = showPredictor
-    ? `<div class="ap-wrap" onclick="event.stopPropagation();event.preventDefault()">
+    ? `<div class="ap-wrap" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();event.preventDefault()">
         <span class="ap-label">What if I get</span>
         <input type="range" class="ap-slider" min="0" max="100" value="85"
           data-course="${a.course.replace(/"/g,'&quot;')}"
