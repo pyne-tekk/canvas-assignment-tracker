@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+import re
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timezone
@@ -242,7 +243,7 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
                     cats_by_term = {}
                     all_asgns    = []
                     for d in detail.get('details', []):
-                        term_name = d.get('task', {}).get('termName', 'Unknown')
+                        term_name = _normalize_term(d.get('task', {}).get('termName', 'Unknown'))
                         cats = []
                         for cat in d.get('categories', []):
                             asgns = []
@@ -433,6 +434,19 @@ def _fetch_ic_assignments(sess, base, person_id, course):
     return assignments
 
 
+def _normalize_term(raw: str) -> str:
+    """Normalize IC termName variants to Q1/Q2/Q3/Q4/Final."""
+    if not raw:
+        return raw
+    raw = raw.strip()
+    m = re.search(r'Q([1-4])', raw, re.IGNORECASE)
+    if m:
+        return f'Q{m.group(1)}'
+    if re.search(r'final|exam', raw, re.IGNORECASE):
+        return 'Final'
+    return raw
+
+
 def _normalize_ic_api(data, person_id=None) -> list:
     """
     Normalise IC /campus/resources/portal/grades response into Slate's grade format.
@@ -479,7 +493,7 @@ def _normalize_ic_api(data, person_id=None) -> list:
 
             pct = task.get('percent') or task.get('progressPercent')
             score_str = task.get('score') or task.get('progressScore')
-            task_term = task.get('termName') or term_name
+            task_term = _normalize_term(task.get('termName') or term_name)
 
             log.info(f'IC course {name} | term={task_term} | pct={pct} | score={score_str} | portal={task.get("portal")}')
 
