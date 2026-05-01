@@ -16,10 +16,12 @@ from supabase import create_client
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-SUPABASE_URL = "https://ktkwtlrnrzrnigevvccc.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0a3d0bHJucnpybmlnZXZ2Y2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyNTQ5NDIsImV4cCI6MjA5MjgzMDk0Mn0.RuKhrCpfa-kl16dQ1FBdi6v3crZUPcyB-xPDkW7nmYo"
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)   # background/anon queries
-_auth    = create_client(SUPABASE_URL, SUPABASE_KEY)   # auth ops only (sign_in, sign_up, refresh, get_user)
+SUPABASE_URL     = "https://ktkwtlrnrzrnigevvccc.supabase.co"
+SUPABASE_KEY     = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0a3d0bHJucnpybmlnZXZ2Y2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyNTQ5NDIsImV4cCI6MjA5MjgzMDk0Mn0.RuKhrCpfa-kl16dQ1FBdi6v3crZUPcyB-xPDkW7nmYo"
+SUPABASE_SERVICE = os.environ.get('SUPABASE_SERVICE_KEY', '')
+
+_auth   = create_client(SUPABASE_URL, SUPABASE_KEY)                                          # auth ops only
+_admin  = create_client(SUPABASE_URL, SUPABASE_SERVICE) if SUPABASE_SERVICE else None        # bypasses RLS for background sync
 
 def user_db(token: str):
     """Per-request client scoped to a user's JWT — satisfies RLS without mutating global state."""
@@ -560,7 +562,7 @@ def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str, 
     try:
         password = decrypt_val(encrypted_pw)
         grades = playwright_ic_sync(ic_username, password, ic_domain)
-        db = user_db(token) if token else supabase
+        db = user_db(token) if token else (_admin or supabase)
         db.table('users').update({
             'ic_grades_cache': grades,
             'ic_synced_at': datetime.now(timezone.utc).isoformat(),
@@ -580,10 +582,13 @@ def sync_all_ic_users():
     if _sync_running:
         log.info('IC sync job: previous run still in progress, skipping')
         return
+    if not _admin:
+        log.warning('IC sync job: SUPABASE_SERVICE_KEY not set, skipping')
+        return
     _sync_running = True
     try:
         rows = (
-            supabase.table('users')
+            _admin.table('users')
             .select('id, ic_domain, ic_username, ic_password')
             .not_.is_('ic_domain', 'null')
             .not_.is_('ic_password', 'null')
