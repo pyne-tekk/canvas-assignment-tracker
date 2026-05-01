@@ -4,6 +4,4 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     autoDeploy: true
-    envVars:
-      - key: CREDENTIAL_KEY
-        generateValue: true
+    envVars: []
