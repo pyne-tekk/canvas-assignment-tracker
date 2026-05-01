@@ -857,7 +857,9 @@ def format_assignment(a, course_name, now, group_id=None, group_name=None, group
 
 @app.route("/")
 def index():
-    return send_from_directory("static", "index.html")
+    resp = send_from_directory("static", "index.html")
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp
 
 
 @app.route("/api/assignments", methods=["POST"])
