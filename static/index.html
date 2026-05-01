@@ -1199,10 +1199,9 @@ async function syncICNow() {
     renderGrades(window._courses || []);
   } catch (e) {
     st.style.color = 'var(--orange)'; st.textContent = 'Sync running in background — reload in 2 min.';
+    await loadICStatus();
+    renderGrades(window._courses || []);
   }
-  // Always reload from Supabase so categories_by_term is fresh in memory
-  await loadICStatus();
-  renderGrades(window._courses || []);
   btn.disabled = false;
 }
 
