@@ -362,6 +362,7 @@ body {
 .grade-letter { font-size: 13px; font-weight: 500; margin-bottom: 16px; }
 .grade-bar-track { height: 1px; background: var(--bg4); overflow: hidden; }
 .grade-bar-fill { height: 100%; width: 0; transition: width 700ms var(--ease-out); }
+.grade-trend { display: block; margin-top: 10px; opacity: 0.85; }
 
 /* ─── Calendar ────────────────────────────────────────── */
 .cal-wrap { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
@@ -1280,6 +1281,7 @@ async function enterApp() {
   renderDash();
   initCalendar();
   loadSavedCanvas(); // silent background — does not block app entry
+  if (_ic.connected) syncICNow(); // auto-sync on login if IC is connected
 }
 
 async function loadSavedCanvas() {
@@ -1367,6 +1369,24 @@ function logout() {
 }
 
 /* ── Render ─────────────────────────────────────────── */
+function buildTrendline(courseName) {
+  const termOrder = ['Q1','Q2','Q3','Q4'];
+  const map = {};
+  (_ic.grades || []).forEach(c => { if (c.name === courseName) map[c.term] = c.grade; });
+  const data = termOrder.map(t => map[t] != null ? Math.round(map[t]) : null).filter(v => v != null);
+  if (data.length < 2) return '';
+  const W = 64, H = 22, pad = 3;
+  const lo = Math.min(...data) - 3, hi = Math.max(...data) + 3, rng = hi - lo || 1;
+  const x = i => pad + i * (W - pad*2) / (data.length - 1);
+  const y = v => H - pad - ((v - lo) / rng) * (H - pad*2);
+  const pts = data.map((v,i) => `${x(i)},${y(v)}`).join(' ');
+  const col = gradeColor(data[data.length-1]);
+  return `<svg class="grade-trend" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+    <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${x(data.length-1)}" cy="${y(data[data.length-1])}" r="2.5" fill="${col}"/>
+  </svg>`;
+}
+
 function renderDash() {
   const missing  = all.filter(a=>a.missing).length;
   const soon     = all.filter(a=>a.due_soon&&!a.missing).length;
@@ -1537,6 +1557,7 @@ function renderGrades(courseList) {
         <div class="grade-pct" style="color:${col}">${pct}<span style="font-size:13px;color:var(--text3);font-weight:400">%</span></div>
         <div class="grade-letter" style="color:${col}">${letter}</div>
         <div class="grade-bar-track"><div class="grade-bar-fill" data-w="${pct}" style="background:${col}"></div></div>
+        ${buildTrendline(c.name)}
       </div>`;
     }).join('');
 
