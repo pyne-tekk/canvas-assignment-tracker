@@ -7,3 +7,4 @@ cryptography
 beautifulsoup4
 apscheduler
 playwright
+resend
