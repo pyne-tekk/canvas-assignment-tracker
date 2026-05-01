@@ -114,7 +114,15 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
         log.info('Playwright: sync_playwright context entered')
         browser = p.chromium.launch(
             headless=True,
-            args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+            args=[
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--single-process',
+                '--disable-extensions',
+                '--disable-background-networking',
+            ]
         )
         log.info('Playwright: browser launched')
         context = browser.new_context(user_agent=USER_AGENT)
@@ -672,6 +680,9 @@ def sync_ic_now():
         uid = get_uid(auth_header)
     except Exception:
         return jsonify({'error': 'Unauthorized'}), 401
+
+    if _sync_running:
+        return jsonify({'error': 'Sync already in progress — try again in a moment.'}), 429
 
     res = supabase.table('users').select('ic_domain, ic_username, ic_password').eq('id', uid).execute()
     if not res.data or not res.data[0].get('ic_domain') or not res.data[0].get('ic_password'):
