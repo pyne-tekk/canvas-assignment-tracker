@@ -18,8 +18,14 @@ log = logging.getLogger(__name__)
 
 SUPABASE_URL = "https://ktkwtlrnrzrnigevvccc.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0a3d0bHJucnpybmlnZXZ2Y2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyNTQ5NDIsImV4cCI6MjA5MjgzMDk0Mn0.RuKhrCpfa-kl16dQ1FBdi6v3crZUPcyB-xPDkW7nmYo"
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)   # table queries — stays on anon key
-_auth    = create_client(SUPABASE_URL, SUPABASE_KEY)   # auth ops only — session mutations isolated here
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)   # background/anon queries
+_auth    = create_client(SUPABASE_URL, SUPABASE_KEY)   # auth ops only (sign_in, sign_up, refresh, get_user)
+
+def user_db(token: str):
+    """Per-request client scoped to a user's JWT — satisfies RLS without mutating global state."""
+    c = create_client(SUPABASE_URL, SUPABASE_KEY)
+    c.postgrest.auth(token)
+    return c
 
 app = Flask(__name__, static_folder='static')
 CORS(app)
@@ -549,12 +555,13 @@ def _parse_ic_html(html: str) -> list:
 
 
 # ── Background sync ────────────────────────────────────────────────────────────
-def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str):
+def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str, token: str = None):
     """Re-auth and refresh IC grades for a single user. Returns grades list on success, None on failure."""
     try:
         password = decrypt_val(encrypted_pw)
         grades = playwright_ic_sync(ic_username, password, ic_domain)
-        supabase.table('users').update({
+        db = user_db(token) if token else supabase
+        db.table('users').update({
             'ic_grades_cache': grades,
             'ic_synced_at': datetime.now(timezone.utc).isoformat(),
         }).eq('id', uid).execute()
@@ -601,6 +608,7 @@ atexit.register(lambda: scheduler.shutdown(wait=False))
 @app.route('/api/connect_ic', methods=['POST'])
 def connect_ic():
     auth_header = request.headers.get('Authorization', '')
+    token = auth_header.replace('Bearer ', '').strip()
     data = request.json or {}
 
     ic_domain  = data.get('ic_domain', '').replace('https://', '').replace('http://', '').rstrip('/')
@@ -627,7 +635,7 @@ def connect_ic():
 
     now_iso = datetime.now(timezone.utc).isoformat()
 
-    supabase.table('users').update({
+    user_db(token).table('users').update({
         'ic_domain':       ic_domain,
         'ic_username':     username,
         'ic_password':     encrypt_val(password),
@@ -642,12 +650,13 @@ def connect_ic():
 @app.route('/api/disconnect_ic', methods=['POST'])
 def disconnect_ic():
     auth_header = request.headers.get('Authorization', '')
+    token = auth_header.replace('Bearer ', '').strip()
     try:
         uid = get_uid(auth_header)
     except Exception:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    supabase.table('users').update({
+    user_db(token).table('users').update({
         'ic_domain':       None,
         'ic_username':     None,
         'ic_password':     None,
@@ -662,6 +671,7 @@ def disconnect_ic():
 @app.route('/api/toggle_ic', methods=['POST'])
 def toggle_ic():
     auth_header = request.headers.get('Authorization', '')
+    token = auth_header.replace('Bearer ', '').strip()
     data = request.json or {}
     enabled = bool(data.get('enabled', False))
 
@@ -670,13 +680,14 @@ def toggle_ic():
     except Exception:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    supabase.table('users').update({'ic_enabled': enabled}).eq('id', uid).execute()
+    user_db(token).table('users').update({'ic_enabled': enabled}).eq('id', uid).execute()
     return jsonify({'ok': True, 'enabled': enabled})
 
 
 @app.route('/api/sync_ic', methods=['POST'])
 def sync_ic_now():
     auth_header = request.headers.get('Authorization', '')
+    token = auth_header.replace('Bearer ', '').strip()
     try:
         uid = get_uid(auth_header)
     except Exception:
@@ -685,7 +696,7 @@ def sync_ic_now():
     if _sync_running:
         return jsonify({'error': 'Sync already in progress — try again in a moment.'}), 429
 
-    res = supabase.table('users').select('ic_domain, ic_username, ic_password').eq('id', uid).execute()
+    res = user_db(token).table('users').select('ic_domain, ic_username, ic_password').eq('id', uid).execute()
     if not res.data or not res.data[0].get('ic_domain') or not res.data[0].get('ic_password'):
         return jsonify({'error': 'reconnect', 'message': 'IC credentials missing — re-enter them in Settings.'}), 400
     row = res.data[0]
@@ -696,7 +707,7 @@ def sync_ic_now():
     except Exception:
         return jsonify({'error': 'reconnect', 'message': 'Stored IC credentials are invalid (server key changed). Re-enter your password in Settings.'}), 400
 
-    grades = sync_user_ic(uid, row['ic_domain'], row['ic_username'], row['ic_password'])
+    grades = sync_user_ic(uid, row['ic_domain'], row['ic_username'], row['ic_password'], token=token)
     if grades is None:
         return jsonify({'error': 'Sync failed — check credentials or IC domain'}), 400
 
@@ -707,13 +718,14 @@ def sync_ic_now():
 @app.route('/api/ic_status', methods=['GET'])
 def ic_status():
     auth_header = request.headers.get('Authorization', '')
+    token = auth_header.replace('Bearer ', '').strip()
     try:
         uid = get_uid(auth_header)
     except Exception:
         return jsonify({'error': 'Unauthorized'}), 401
 
     res = (
-        supabase.table('users')
+        user_db(token).table('users')
         .select('ic_domain, ic_enabled, ic_grades_cache, ic_synced_at')
         .eq('id', uid)
         .execute()
@@ -775,7 +787,7 @@ def save_canvas():
     try:
         user = _auth.auth.get_user(auth_token)
         uid  = user.user.id
-        supabase.table("users").upsert({
+        user_db(auth_token).table("users").upsert({
             "id":            uid,
             "email":         user.user.email,
             "canvas_domain": data["domain"],
@@ -792,7 +804,7 @@ def load_canvas():
     try:
         user = _auth.auth.get_user(auth_token)
         uid  = user.user.id
-        res  = supabase.table("users").select("canvas_domain, canvas_token").eq("id", uid).execute()
+        res  = user_db(auth_token).table("users").select("canvas_domain, canvas_token").eq("id", uid).execute()
         return jsonify(res.data[0] if res.data else {})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
