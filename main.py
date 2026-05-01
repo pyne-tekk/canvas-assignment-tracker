@@ -268,7 +268,8 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
                                 'weight':      cat.get('weight', 0),
                                 'assignments': asgns,
                             })
-                        cats_by_term[term_name] = cats
+                        if len(cats) > len(cats_by_term.get(term_name, [])):
+                            cats_by_term[term_name] = cats
                     c['categories_by_term'] = cats_by_term
                     c['assignments']         = all_asgns
                     log.info(f'IC detail section={sid}: {len(cats_by_term)} terms, {len(all_asgns)} assignments')
