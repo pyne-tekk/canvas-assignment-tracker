@@ -1390,7 +1390,7 @@ function _fillAssignmentsFromIC() {
   const pending = [];
   (_ic.grades || []).filter(c => c.term === currentTerm).forEach(course => {
     (course.assignments || []).forEach(a => {
-      if (a.score != null && !a.missing) return; // already graded
+      if (a.score != null && a.score !== 0 && !a.missing) return; // already graded; 0 = missing
       const dueDate    = a.due ? new Date(a.due) : null;
       const hoursUntil = dueDate ? (dueDate - now) / 3600000 : null;
       pending.push({
