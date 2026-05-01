@@ -1005,7 +1005,7 @@ function updateAssignPrediction(slider) {
   const catName    = slider.dataset.cat;
   const score      = parseInt(slider.value);
   const scoreEl    = slider.parentElement.querySelector('.ap-score');
-  const resultEl   = slider.parentElement.querySelector('.ap-result');
+  const resultEl   = slider.parentElement.parentElement.querySelector('.ap-result');
   if (scoreEl) scoreEl.textContent = score + '%';
 
   // Find course — prefer matching term, fall back to any with categories loaded
