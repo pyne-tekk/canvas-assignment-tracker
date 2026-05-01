@@ -213,7 +213,7 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
 
             try:
                 page.goto(f'{base}/campus/resources/portal/grades',
-                          wait_until='load', timeout=20000)
+                          wait_until='domcontentloaded', timeout=60000)
                 raw = page.inner_text('body').strip()
                 log.info(f'IC grades body[:2000]={raw[:2000]}')
                 courses = _normalize_ic_api(json.loads(raw), None)
