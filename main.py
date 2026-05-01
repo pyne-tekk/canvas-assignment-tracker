@@ -9,9 +9,15 @@ import os
 import json
 import logging
 import atexit
+import time
 from cryptography.fernet import Fernet
 from apscheduler.schedulers.background import BackgroundScheduler
 from supabase import create_client
+try:
+    from pywebpush import webpush, WebPushException
+    _webpush_available = True
+except ImportError:
+    _webpush_available = False
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -22,6 +28,10 @@ SUPABASE_SERVICE = os.environ.get('SUPABASE_SERVICE_KEY', '')
 
 _auth   = create_client(SUPABASE_URL, SUPABASE_KEY)                                          # auth ops only
 _admin  = create_client(SUPABASE_URL, SUPABASE_SERVICE) if SUPABASE_SERVICE else None        # bypasses RLS for background sync
+
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
+VAPID_PUBLIC_KEY  = os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_SUBJECT     = os.environ.get('VAPID_SUBJECT', 'mailto:admin@slate.app')
 
 def user_db(token: str):
     """Per-request client scoped to a user's JWT — satisfies RLS without mutating global state."""
@@ -568,6 +578,7 @@ def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str, 
             'ic_synced_at': datetime.now(timezone.utc).isoformat(),
         }).eq('id', uid).execute()
         log.info(f'IC sync OK for user {uid[:8]}… ({len(grades)} courses)')
+        send_push(uid, 'Slate', f'Grades synced — {len(grades)} courses updated')
         return grades
     except Exception as e:
         log.warning(f'IC sync failed for user {uid[:8]}…: {e}')
@@ -598,6 +609,7 @@ def sync_all_ic_users():
         log.info(f'IC sync job: {len(rows)} users to refresh')
         for row in rows:
             sync_user_ic(row['id'], row['ic_domain'], row['ic_username'], row['ic_password'])
+            time.sleep(8)  # let Chromium fully exit before next user
     except Exception as e:
         log.error(f'IC sync job error: {e}')
     finally:
@@ -608,6 +620,57 @@ scheduler = BackgroundScheduler(daemon=True)
 scheduler.add_job(sync_all_ic_users, 'interval', minutes=3, id='ic_sync', replace_existing=True)
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown(wait=False))
+
+
+# ── Web Push ───────────────────────────────────────────────────────────────────
+def send_push(uid: str, title: str, body: str):
+    """Send a web push notification to a user. Silently no-ops if VAPID keys aren't configured."""
+    if not (_webpush_available and VAPID_PRIVATE_KEY and VAPID_PUBLIC_KEY and _admin):
+        return
+    try:
+        row = _admin.table('users').select('push_subscription').eq('id', uid).single().execute()
+        sub_json = row.data.get('push_subscription') if row.data else None
+        if not sub_json:
+            return
+        sub = json.loads(sub_json) if isinstance(sub_json, str) else sub_json
+        webpush(
+            subscription_info=sub,
+            data=json.dumps({'title': title, 'body': body}),
+            vapid_private_key=VAPID_PRIVATE_KEY,
+            vapid_claims={'sub': VAPID_SUBJECT},
+        )
+    except WebPushException as e:
+        if '410' in str(e) or '404' in str(e):
+            # Subscription expired — clean it up
+            try:
+                _admin.table('users').update({'push_subscription': None}).eq('id', uid).execute()
+            except Exception:
+                pass
+        else:
+            log.warning(f'Push failed for {uid[:8]}…: {e}')
+    except Exception as e:
+        log.warning(f'Push error for {uid[:8]}…: {e}')
+
+
+@app.route('/api/vapid_public_key')
+def vapid_public_key():
+    return jsonify({'key': VAPID_PUBLIC_KEY})
+
+
+@app.route('/api/save_push_sub', methods=['POST'])
+def save_push_sub():
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.replace('Bearer ', '').strip()
+    if not token:
+        return jsonify({'error': 'unauthorized'}), 401
+    try:
+        uid = get_uid(auth_header)
+    except Exception:
+        return jsonify({'error': 'unauthorized'}), 401
+    sub = request.json or {}
+    user_db(token).table('users').update({'push_subscription': json.dumps(sub)}).eq('id', uid).execute()
+    return jsonify({'ok': True})
+
 
 # ── IC API endpoints ───────────────────────────────────────────────────────────
 @app.route('/api/connect_ic', methods=['POST'])
@@ -902,6 +965,14 @@ def format_assignment(a, course_name, now, group_id=None, group_name=None, group
 def index():
     resp = send_from_directory("static", "index.html")
     resp.headers['Cache-Control'] = 'no-store'
+    return resp
+
+
+@app.route("/sw.js")
+def service_worker():
+    resp = send_from_directory("static", "sw.js")
+    resp.headers['Cache-Control'] = 'no-store'
+    resp.headers['Service-Worker-Allowed'] = '/'
     return resp
 
 
