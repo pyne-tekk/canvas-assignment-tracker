@@ -11,6 +11,7 @@ import logging
 import atexit
 import time
 import gc
+import threading
 from cryptography.fernet import Fernet
 from apscheduler.schedulers.background import BackgroundScheduler
 from supabase import create_client
@@ -597,7 +598,13 @@ def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str, 
             pass
 
         password = decrypt_val(encrypted_pw)
-        grades = playwright_ic_sync(ic_username, password, ic_domain)
+        if not _playwright_lock.acquire(timeout=180):
+            log.warning(f'Playwright lock timeout for user {uid[:8]}…')
+            return None
+        try:
+            grades = playwright_ic_sync(ic_username, password, ic_domain)
+        finally:
+            _playwright_lock.release()
 
         db.table('users').update({
             'ic_grades_cache': grades,
@@ -614,6 +621,7 @@ def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str, 
 
 
 _sync_running = False
+_playwright_lock = threading.Lock()  # one Playwright instance at a time across all syncs
 
 def sync_all_ic_users():
     """Scheduled job — runs every 20 minutes, refreshes grades for all IC-connected users."""
@@ -646,7 +654,7 @@ def sync_all_ic_users():
 
 
 scheduler = BackgroundScheduler(daemon=True)
-scheduler.add_job(sync_all_ic_users, 'interval', minutes=3, id='ic_sync', replace_existing=True, max_instances=1, coalesce=True)
+scheduler.add_job(sync_all_ic_users, 'interval', minutes=20, id='ic_sync', replace_existing=True, max_instances=1, coalesce=True)
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown(wait=False))
 
@@ -763,9 +771,6 @@ def sync_ic_now():
         uid = get_uid(auth_header)
     except Exception:
         return jsonify({'error': 'Unauthorized'}), 401
-
-    if _sync_running:
-        return jsonify({'error': 'Sync already in progress — try again in a moment.'}), 429
 
     res = user_db(token).table('users').select('ic_domain, ic_username, ic_password').eq('id', uid).execute()
     if not res.data or not res.data[0].get('ic_domain') or not res.data[0].get('ic_password'):
