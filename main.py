@@ -1,5 +1,8 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
 import re
 import requests
 from bs4 import BeautifulSoup
@@ -28,8 +31,8 @@ SUPABASE_URL     = "https://ktkwtlrnrzrnigevvccc.supabase.co"
 SUPABASE_KEY     = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0a3d0bHJucnpybmlnZXZ2Y2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyNTQ5NDIsImV4cCI6MjA5MjgzMDk0Mn0.RuKhrCpfa-kl16dQ1FBdi6v3crZUPcyB-xPDkW7nmYo"
 SUPABASE_SERVICE = os.environ.get('SUPABASE_SERVICE_KEY', '')
 
-_auth   = create_client(SUPABASE_URL, SUPABASE_KEY)                                          # auth ops only
-_admin  = create_client(SUPABASE_URL, SUPABASE_SERVICE) if SUPABASE_SERVICE else None        # bypasses RLS for background sync
+_auth   = create_client(SUPABASE_URL, SUPABASE_KEY)
+_admin  = create_client(SUPABASE_URL, SUPABASE_SERVICE) if SUPABASE_SERVICE else None
 
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 if _resend_available and RESEND_API_KEY:
@@ -43,6 +46,27 @@ def user_db(token: str):
 
 app = Flask(__name__, static_folder='static')
 CORS(app)
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per minute"],
+    storage_uri="memory://"
+)
+
+Talisman(app,
+    force_https=False,
+    strict_transport_security=True,
+    session_cookie_secure=True,
+    content_security_policy={
+        'default-src': "'self'",
+        'script-src': ["'self'", "'unsafe-inline'"],
+        'style-src': ["'self'", "'unsafe-inline'", 'fonts.googleapis.com'],
+        'font-src': ["'self'", 'fonts.gstatic.com'],
+        'img-src': ["'self'", 'data:'],
+        'connect-src': ["'self'", 'https://*.supabase.co'],
+    }
+)
 
 # ── Encryption ─────────────────────────────────────────────────────────────────
 # Generate a key once:  python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
@@ -66,6 +90,13 @@ def get_uid(auth_header: str) -> str:
     user = _auth.auth.get_user(token)
     return user.user.id
 
+# ── Input validation ───────────────────────────────────────────────────────────
+def _validate_ic_domain(domain: str) -> bool:
+    return bool(re.match(r'^[a-zA-Z0-9][a-zA-Z0-9\-\.]{1,100}\.[a-zA-Z]{2,}$', domain))
+
+def _validate_username(username: str) -> bool:
+    return bool(username) and len(username) <= 100 and bool(re.match(r'^[\w\.\-@\s]+$', username))
+
 # ── NCEDCloud + Infinite Campus ────────────────────────────────────────────────
 NCEDCLOUD_BASE = 'https://ncedcloud.mcnc.org'
 USER_AGENT = (
@@ -81,7 +112,7 @@ def _make_session() -> requests.Session:
 
 def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
     """
-    NCEDCloud → Infinite Campus SSO + grade fetch, all via one Playwright session.
+    NCEDCloud -> Infinite Campus SSO + grade fetch, all via one Playwright session.
     Fetches grades while the browser is still open — avoids cookie transfer issues
     (IC ties sessions to browser fingerprint server-side).
     Returns list of course dicts. Raises ValueError on bad credentials.
@@ -152,12 +183,10 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
         )
         log.info('Playwright: browser launched')
         context = browser.new_context(user_agent=USER_AGENT)
-        context.set_default_timeout(60000)  # 60s max per operation
+        context.set_default_timeout(60000)
         page = context.new_page()
 
         # ── Intercept ALL JSON API responses from the very start ──────────────
-        # IC fires grade API calls during the initial portal load right after
-        # the SAML redirect — we must be listening before goto(sso_url).
         grade_data_map = {}
 
         def _capture_json(response):
@@ -176,53 +205,41 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
         page.on('response', _capture_json)
 
         try:
-            # Navigate to NCEDCloud SSO entry point
-            # Use 'load' not 'networkidle' — Ember SPA fires constant XHR, networkidle never fires
             page.goto(sso_url, wait_until='load', timeout=60000)
             log.info(f'Playwright: landed on {page.url}')
 
             if 'idp.ncedcloud.org' not in page.url:
                 raise RuntimeError(f'Expected NCEDCloud IDP, got {page.url}')
 
-            # Fill username (Ember SPA — wait for JS to render any input field)
             page.wait_for_selector('input:visible')
             page.locator('input:visible').first.fill(username)
             log.info('Playwright: username filled')
 
-            # Submit username
             try:
                 page.locator('button:visible').first.click()
             except Exception:
                 page.keyboard.press('Enter')
 
-            # Fill password
             page.wait_for_selector('input[type="password"]')
             page.fill('input[type="password"]', password)
             log.info('Playwright: password filled')
 
-            # Submit password — try button first, fall back to Enter
             try:
                 page.locator('button:visible').first.click()
             except Exception:
                 page.keyboard.press('Enter')
             log.info(f'Playwright: password submitted, current url={page.url}')
 
-            # Wait for navigation away from NCEDCloud IDP.
-            # Don't glob-match the final URL — the redirect chain can be multi-hop.
-            # Instead, wait until we leave idp.ncedcloud.org, then let it settle.
             try:
-                # wait_for_function uses eval() which NCEDCloud CSP blocks.
-                # wait_for_url with a Python lambda predicate — no JS eval, no CSP issue.
                 page.wait_for_url(
                     lambda url: 'idp.ncedcloud.org' not in url,
                     timeout=90000
                 )
                 log.info(f'Playwright: left NCEDCloud IDP, now at {page.url}')
-                # Let any further redirect chain complete
                 try:
                     page.wait_for_load_state('networkidle', timeout=15000)
                 except Exception:
-                    pass  # networkidle may never fire on Ember; that's fine
+                    pass
                 log.info(f'Playwright: settled at {page.url}')
                 if ic_domain not in page.url:
                     body_text = page.inner_text('body')
@@ -239,9 +256,6 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
                 raise RuntimeError('NCEDCloud SSO timed out — may still be on IDP after 90s.')
 
             # ── Fetch grades from confirmed endpoints ─────────────────────────
-            # URLs confirmed from browser network tab:
-            # /campus/resources/portal/grades        — 118 kB, full grade data
-            # /campus/api/portal/assignment/recentlyScored — all assignments
             base = f'https://{ic_domain}'
             courses = []
 
@@ -255,9 +269,6 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
             except Exception as e:
                 log.info(f'IC grades endpoint failed: {e}')
 
-            # ── Fetch per-course category detail (weights + assignments) ─────
-            # Must use page.evaluate(fetch) not page.goto — this is an XHR-only
-            # endpoint; browser navigation returns the SPA HTML shell, not JSON.
             for c in courses:
                 sid = c.get('section_id')
                 if not sid:
@@ -338,11 +349,11 @@ def _follow_saml(sess: requests.Session, soup: BeautifulSoup) -> bool:
                 if inp.get('name')
             }
             saml_action = form.get('action', '')
-            log.info(f'SAML form found → POST {saml_action} payload_keys={list(saml_payload.keys())}')
+            log.info(f'SAML form found -> POST {saml_action} payload_keys={list(saml_payload.keys())}')
             if saml_action:
                 try:
                     r = sess.post(saml_action, data=saml_payload, timeout=15, allow_redirects=True)
-                    log.info(f'SAML POST → {r.status_code} final_url={r.url}')
+                    log.info(f'SAML POST -> {r.status_code} final_url={r.url}')
                     return True
                 except requests.RequestException as e:
                     log.warning(f'SAML POST failed: {e}')
@@ -359,12 +370,11 @@ def ic_pull_grades(sess: requests.Session, ic_domain: str) -> list:
     base = f'https://{ic_domain}'
     courses = []
 
-    # ── Attempt 1: Discover personID ──────────────────────────────────────────
     person_id = None
     for path in ['/campus/api/portal/students', '/campus/api/portal/student']:
         try:
             r = sess.get(f'{base}{path}', timeout=10)
-            log.info(f'IC students endpoint {path} → {r.status_code}')
+            log.info(f'IC students endpoint {path} -> {r.status_code}')
             if r.status_code == 200:
                 d = r.json()
                 if isinstance(d, list):
@@ -377,7 +387,6 @@ def ic_pull_grades(sess: requests.Session, ic_domain: str) -> list:
         except Exception as e:
             log.info(f'IC students {path} error: {e}')
 
-    # ── Attempt 2: REST grades with personID ──────────────────────────────────
     if person_id:
         for path in [
             f'/campus/api/portal/students/{person_id}/grades',
@@ -388,7 +397,7 @@ def ic_pull_grades(sess: requests.Session, ic_domain: str) -> list:
         ]:
             try:
                 r = sess.get(f'{base}{path}', timeout=10)
-                log.info(f'IC grades {path} → {r.status_code} len={len(r.text)}')
+                log.info(f'IC grades {path} -> {r.status_code} len={len(r.text)}')
                 if r.status_code == 200 and r.text.strip():
                     log.info(f'IC grades {path} body[:400]={r.text[:400]}')
                     courses = _normalize_ic_api(r.json(), person_id)
@@ -397,12 +406,11 @@ def ic_pull_grades(sess: requests.Session, ic_domain: str) -> list:
             except Exception as e:
                 log.info(f'IC grades {path} error: {e}')
 
-    # ── Attempt 3: Generic grade endpoints ────────────────────────────────────
     if not courses:
         for path in ['/campus/api/portal/grades', '/campus/api/portal/students/courses']:
             try:
                 r = sess.get(f'{base}{path}', timeout=10)
-                log.info(f'IC generic {path} → {r.status_code} len={len(r.text)}')
+                log.info(f'IC generic {path} -> {r.status_code} len={len(r.text)}')
                 if r.status_code == 200 and r.text.strip():
                     courses = _normalize_ic_api(r.json(), person_id)
                     if courses:
@@ -410,28 +418,25 @@ def ic_pull_grades(sess: requests.Session, ic_domain: str) -> list:
             except Exception as e:
                 log.info(f'IC generic {path} error: {e}')
 
-    # ── Attempt 4: HTML grade page (most reliable fallback after SSO) ─────────
     if not courses:
         try:
             r = sess.get(f'{base}/campus/prism', params={'x': 'portal.PortalGrades'}, timeout=10)
-            log.info(f'IC HTML prism → {r.status_code} len={len(r.text)} body[:300]={r.text[:300]}')
+            log.info(f'IC HTML prism -> {r.status_code} len={len(r.text)} body[:300]={r.text[:300]}')
             if r.status_code == 200:
                 courses = _parse_ic_html(r.text)
-                log.info(f'IC HTML parse → {len(courses)} courses')
+                log.info(f'IC HTML parse -> {len(courses)} courses')
         except Exception as e:
             log.info(f'IC HTML error: {e}')
 
-    # ── Attempt 5: Alternate portal page ──────────────────────────────────────
     if not courses:
         try:
             r = sess.get(f'{base}/campus/portal/grades.jsp', timeout=10)
-            log.info(f'IC grades.jsp → {r.status_code} len={len(r.text)}')
+            log.info(f'IC grades.jsp -> {r.status_code} len={len(r.text)}')
             if r.status_code == 200:
                 courses = _parse_ic_html(r.text)
         except Exception as e:
             log.info(f'IC grades.jsp error: {e}')
 
-    # ── Fetch assignments for each course ─────────────────────────────────────
     if courses and person_id:
         for c in courses:
             c['assignments'] = _fetch_ic_assignments(sess, base, person_id, c)
@@ -448,7 +453,6 @@ def _fetch_ic_assignments(sess, base, person_id, course):
     assignments = []
     section_id = course.get('section_id') or course.get('sectionID')
 
-    # Try REST assignment endpoint
     if section_id:
         try:
             r = sess.get(
@@ -493,7 +497,6 @@ def _normalize_ic_api(data, person_id=None) -> list:
     """
     courses = []
 
-    # Flatten enrollment → terms → courses, keeping only the active term
     enrollments = data if isinstance(data, list) else [data]
     flat_courses = []
     today = datetime.now(timezone.utc).date()
@@ -508,7 +511,6 @@ def _normalize_ic_api(data, person_id=None) -> list:
             for course in term.get('courses', []):
                 flat_courses.append((term_name, term_start, term_end, course))
 
-    # If no nested structure found, try treating data as flat course list
     if not flat_courses:
         items = data if isinstance(data, list) else data.get('courses', [])
         flat_courses = [(c.get('termName', ''), '', '', c) for c in items if isinstance(c, dict)]
@@ -518,7 +520,6 @@ def _normalize_ic_api(data, person_id=None) -> list:
             name = (item.get('courseName') or item.get('name') or
                     item.get('courseTitle') or 'Unknown Course')
 
-            # Grade lives inside gradingTasks[] — find the portal Term Grade task
             grading_tasks = item.get('gradingTasks') or []
             task = next(
                 (t for t in grading_tasks if t.get('portal') and t.get('taskName') == 'Term Grade'),
@@ -561,7 +562,6 @@ def _parse_ic_html(html: str) -> list:
     soup = BeautifulSoup(html, 'html.parser')
     courses = []
 
-    # IC grade tables typically have class "portalTable" or similar
     for row in soup.select('tr.courseRow, tr[class*="course"], .gradeRow'):
         try:
             cells = row.find_all('td')
@@ -586,9 +586,8 @@ def _grade_snapshot(grades: list) -> dict:
 def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str, token: str = None):
     """Re-auth and refresh IC grades for a single user. Returns grades list on success, None on failure."""
     try:
-        db = user_db(token) if token else (_admin or supabase)
+        db = user_db(token) if token else (_admin or _auth)
 
-        # Fetch existing cache for change detection — best-effort, never blocks sync
         old_grades = []
         try:
             old_row = db.table('users').select('ic_grades_cache').eq('id', uid).execute()
@@ -599,7 +598,7 @@ def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str, 
 
         password = decrypt_val(encrypted_pw)
         if not _playwright_lock.acquire(timeout=180):
-            log.warning(f'Playwright lock timeout for user {uid[:8]}…')
+            log.warning(f'Playwright lock timeout for user {uid[:8]}...')
             return None
         try:
             grades = playwright_ic_sync(ic_username, password, ic_domain)
@@ -610,18 +609,18 @@ def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str, 
             'ic_grades_cache': grades,
             'ic_synced_at': datetime.now(timezone.utc).isoformat(),
         }).eq('id', uid).execute()
-        log.info(f'IC sync OK for user {uid[:8]}… ({len(grades)} courses)')
+        log.info(f'IC sync OK for user {uid[:8]}... ({len(grades)} courses)')
 
         send_grade_email(uid, len(grades))
 
         return grades
     except Exception as e:
-        log.warning(f'IC sync failed for user {uid[:8]}…: {e}')
+        log.warning(f'IC sync failed for user {uid[:8]}...: {e}')
         return None
 
 
 _sync_running = False
-_playwright_lock = threading.Lock()  # one Playwright instance at a time across all syncs
+_playwright_lock = threading.Lock()
 
 def sync_all_ic_users():
     """Scheduled job — runs every 20 minutes, refreshes grades for all IC-connected users."""
@@ -645,8 +644,8 @@ def sync_all_ic_users():
         log.info(f'IC sync job: {len(rows)} users to refresh')
         for row in rows:
             sync_user_ic(row['id'], row['ic_domain'], row['ic_username'], row['ic_password'])
-            gc.collect()       # force Python to release scrape data before next Chromium launch
-            time.sleep(20)     # give Chromium processes time to fully exit
+            gc.collect()
+            time.sleep(20)
     except Exception as e:
         log.error(f'IC sync job error: {e}')
     finally:
@@ -680,11 +679,12 @@ def send_grade_email(uid: str, course_count: int):
             ),
         })
     except Exception as e:
-        log.warning(f'Email failed for {uid[:8]}…: {e}')
+        log.warning(f'Email failed for {uid[:8]}...: {e}')
 
 
 # ── IC API endpoints ───────────────────────────────────────────────────────────
 @app.route('/api/connect_ic', methods=['POST'])
+@limiter.limit("3 per minute")
 def connect_ic():
     auth_header = request.headers.get('Authorization', '')
     token = auth_header.replace('Bearer ', '').strip()
@@ -697,12 +697,17 @@ def connect_ic():
     if not ic_domain or not username or not password:
         return jsonify({'error': 'IC domain, NCEDCloud username, and password are required.'}), 400
 
+    if not _validate_ic_domain(ic_domain):
+        return jsonify({'error': 'Invalid IC domain format.'}), 400
+
+    if not _validate_username(username):
+        return jsonify({'error': 'Invalid username format.'}), 400
+
     try:
         uid = get_uid(auth_header)
     except Exception:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    # Validate credentials + get initial grade snapshot
     try:
         grades = playwright_ic_sync(username, password, ic_domain)
     except ValueError as e:
@@ -764,6 +769,7 @@ def toggle_ic():
 
 
 @app.route('/api/sync_ic', methods=['POST'])
+@limiter.limit("5 per minute")
 def sync_ic_now():
     auth_header = request.headers.get('Authorization', '')
     token = auth_header.replace('Bearer ', '').strip()
@@ -777,7 +783,6 @@ def sync_ic_now():
         return jsonify({'error': 'reconnect', 'message': 'IC credentials missing — re-enter them in Settings.'}), 400
     row = res.data[0]
 
-    # Verify the stored password can actually be decrypted (CREDENTIAL_KEY may have changed on restart)
     try:
         decrypt_val(row['ic_password'])
     except Exception:
@@ -824,6 +829,7 @@ def ic_status():
 
 # ── Existing Canvas auth ───────────────────────────────────────────────────────
 @app.route("/api/signup", methods=["POST"])
+@limiter.limit("5 per minute")
 def signup():
     data = request.json
     try:
@@ -834,6 +840,7 @@ def signup():
 
 
 @app.route("/api/login_user", methods=["POST"])
+@limiter.limit("10 per minute")
 def login_user():
     data = request.json
     try:
@@ -894,7 +901,7 @@ def canvas_get(domain, token, endpoint, params={}):
     log.info(f'Canvas GET {endpoint} domain={domain}')
     while url:
         r = requests.get(url, headers=headers, params=params, timeout=20)
-        log.info(f'Canvas GET {endpoint} → {r.status_code}')
+        log.info(f'Canvas GET {endpoint} -> {r.status_code}')
         r.raise_for_status()
         data = r.json()
         if isinstance(data, list):
@@ -970,12 +977,11 @@ def format_assignment(a, course_name, now, group_id=None, group_name=None, group
 
 
 @app.route("/")
+@limiter.exempt
 def index():
     resp = send_from_directory("static", "index.html")
     resp.headers['Cache-Control'] = 'no-store'
     return resp
-
-
 
 
 @app.route("/api/assignments", methods=["POST"])
@@ -1061,14 +1067,12 @@ def get_assignments():
 
         assignments.sort(key=lambda a: (0 if a["missing"] else 1, a["due_raw"] or "9999"))
 
-        # ── Canvas grades: check override_score first (most accurate) ────────
         course_data = []
         for c in courses:
             enrollments = c.get("enrollments") or []
             grade = None
             if enrollments:
                 e = enrollments[0]
-                # override_score is what the official gradebook displays when set
                 grade = (
                     e.get("override_score") if e.get("override_score") is not None
                     else e.get("computed_current_score")
