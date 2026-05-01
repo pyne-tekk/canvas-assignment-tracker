@@ -539,8 +539,8 @@ def _parse_ic_html(html: str) -> list:
 
 
 # ── Background sync ────────────────────────────────────────────────────────────
-def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str) -> bool:
-    """Re-auth and refresh IC grades for a single user. Returns True on success."""
+def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str):
+    """Re-auth and refresh IC grades for a single user. Returns grades list on success, None on failure."""
     try:
         password = decrypt_val(encrypted_pw)
         grades = playwright_ic_sync(ic_username, password, ic_domain)
@@ -549,10 +549,10 @@ def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str) 
             'ic_synced_at': datetime.now(timezone.utc).isoformat(),
         }).eq('id', uid).execute()
         log.info(f'IC sync OK for user {uid[:8]}… ({len(grades)} courses)')
-        return True
+        return grades
     except Exception as e:
         log.warning(f'IC sync failed for user {uid[:8]}…: {e}')
-        return False
+        return None
 
 
 _sync_running = False
@@ -673,7 +673,6 @@ def sync_ic_now():
         return jsonify({'error': 'Unauthorized'}), 401
 
     res = supabase.table('users').select('ic_domain, ic_username, ic_password').eq('id', uid).execute()
-    log.info(f'sync_ic_now: uid={uid[:8]} res.data={res.data} ic_domain={res.data[0].get("ic_domain") if res.data else None} ic_password_len={len(res.data[0].get("ic_password") or "") if res.data else 0}')
     if not res.data or not res.data[0].get('ic_domain') or not res.data[0].get('ic_password'):
         return jsonify({'error': 'reconnect', 'message': 'IC credentials missing — re-enter them in Settings.'}), 400
     row = res.data[0]
@@ -684,14 +683,12 @@ def sync_ic_now():
     except Exception:
         return jsonify({'error': 'reconnect', 'message': 'Stored IC credentials are invalid (server key changed). Re-enter your password in Settings.'}), 400
 
-    ok = sync_user_ic(uid, row['ic_domain'], row['ic_username'], row['ic_password'])
-    if not ok:
+    grades = sync_user_ic(uid, row['ic_domain'], row['ic_username'], row['ic_password'])
+    if grades is None:
         return jsonify({'error': 'Sync failed — check credentials or IC domain'}), 400
 
-    # Return fresh grades
-    fresh = supabase.table('users').select('ic_grades_cache, ic_synced_at').eq('id', uid).execute()
-    row2  = fresh.data[0] if fresh.data else {}
-    return jsonify({'ok': True, 'grades': row2.get('ic_grades_cache') or [], 'synced_at': row2.get('ic_synced_at')})
+    now_iso = datetime.now(timezone.utc).isoformat()
+    return jsonify({'ok': True, 'grades': grades, 'synced_at': now_iso})
 
 
 @app.route('/api/ic_status', methods=['GET'])
