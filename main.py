@@ -1,1819 +1,1066 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Slate v2</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg:    oklch(11% 0.018 252);
-  --bg2:   oklch(14% 0.017 252);
-  --bg3:   oklch(18% 0.016 252);
-  --bg4:   oklch(22% 0.015 252);
-  --border:  oklch(100% 0 0 / 0.055);
-  --border2: oklch(100% 0 0 / 0.10);
-  --text:  oklch(93% 0.008 252);
-  --text2: oklch(66% 0.010 252);
-  --text3: oklch(42% 0.007 252);
-  --blue:     oklch(62% 0.148 252);
-  --blue-dim: oklch(62% 0.148 252 / 0.10);
-  --red:        oklch(60% 0.175 25);
-  --red-dim:    oklch(60% 0.175 25 / 0.10);
-  --orange:     oklch(68% 0.130 57);
-  --orange-dim: oklch(68% 0.130 57 / 0.10);
-  --green:      oklch(68% 0.140 152);
-  --green-dim:  oklch(68% 0.140 152 / 0.10);
-  --sidebar: 220px;
-  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --radius: 4px;
-}
-
-body {
-  font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100dvh;
-  font-size: 14px;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ─── LOGIN ───────────────────────────────────────────── */
-#loginScreen { min-height: 100dvh; display: flex; align-items: stretch; }
-
-.login-left {
-  display: none;
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(148deg, oklch(16% 0.032 260) 0%, oklch(12% 0.022 254) 42%, oklch(8.5% 0.014 244) 100%);
-  padding: 48px 52px;
-  flex-direction: column;
-  justify-content: space-between;
-}
-@media (min-width: 780px) { .login-left { display: flex; } }
-
-.login-left::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 75% 60% at 38% 48%, oklch(24% 0.048 254 / 0.32) 0%, transparent 68%);
-  pointer-events: none;
-}
-.login-left::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 180px;
-  background: linear-gradient(to top, oklch(8.5% 0.014 244 / 0.6), transparent);
-  pointer-events: none;
-}
-
-.login-brand-mark, .login-tagline, .login-tagline-sub, .login-stack-note { position: relative; z-index: 2; }
-
-.login-brand-mark { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
-.login-brand-mark span { color: var(--blue); }
-.login-tagline { font-size: 32px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.16; max-width: 300px; }
-.login-tagline-sub { font-size: 13.5px; color: var(--text2); line-height: 1.7; max-width: 280px; margin-top: 14px; font-weight: 400; }
-.login-stack-note { font-size: 10.5px; color: var(--text3); letter-spacing: 0.4px; }
-
-/* 3D grade scene */
-.grade-scene { position: absolute; inset: 0; perspective: 580px; perspective-origin: 50% 44%; pointer-events: none; z-index: 1; }
-
-.grade-float {
-  position: absolute;
-  font-family: 'Geist', sans-serif;
-  font-weight: 600;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  background: oklch(19% 0.024 254 / 0.58);
-  border: 1px solid oklch(100% 0 0 / 0.07);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-radius: 5px;
-  transform-style: preserve-3d;
-  will-change: transform, opacity;
-}
-
-@keyframes floatGrade {
-  0%, 100% { transform: var(--t0); opacity: var(--op0); }
-  50%       { transform: var(--t1); opacity: var(--op1); }
-}
-
-.gf-aplus   { top: 18%; left: 27%; font-size: 58px; padding: 14px 22px; color: var(--blue); text-shadow: 0 0 40px oklch(62% 0.148 252 / 0.35); --t0: rotateX(11deg) rotateY(-7deg) translateZ(32px) translateY(0px); --t1: rotateX(11deg) rotateY(-7deg) translateZ(32px) translateY(-15px); --op0: 0.90; --op1: 0.95; animation: floatGrade 7.2s ease-in-out infinite; }
-.gf-100     { top: 38%; right: 13%; font-size: 40px; padding: 12px 18px; color: var(--text); --t0: rotateX(-8deg) rotateY(15deg) translateZ(12px) translateY(0px); --t1: rotateX(-8deg) rotateY(15deg) translateZ(12px) translateY(-11px); --op0: 0.68; --op1: 0.75; animation: floatGrade 8.8s ease-in-out infinite; animation-delay: -2.4s; }
-.gf-97      { top: 56%; left: 14%; font-size: 29px; padding: 10px 15px; color: var(--text); --t0: rotateX(6deg) rotateY(-19deg) translateZ(6px) translateY(0px); --t1: rotateX(6deg) rotateY(-19deg) translateZ(6px) translateY(-9px); --op0: 0.48; --op1: 0.55; animation: floatGrade 6.2s ease-in-out infinite; animation-delay: -4.1s; }
-.gf-a-ghost { top: 22%; left: 5%; font-size: 96px; padding: 8px 14px; color: var(--blue); background: transparent; border-color: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; --t0: rotateX(20deg) rotateY(10deg) translateZ(-38px) translateY(0px); --t1: rotateX(20deg) rotateY(10deg) translateZ(-38px) translateY(-20px); --op0: 0.07; --op1: 0.10; animation: floatGrade 11s ease-in-out infinite; animation-delay: -1.6s; }
-.gf-bplus   { bottom: 30%; right: 18%; font-size: 33px; padding: 11px 16px; color: var(--text); --t0: rotateX(-12deg) rotateY(-5deg) translateZ(20px) translateY(0px); --t1: rotateX(-12deg) rotateY(-5deg) translateZ(20px) translateY(-12px); --op0: 0.58; --op1: 0.65; animation: floatGrade 7.6s ease-in-out infinite; animation-delay: -3.3s; }
-.gf-94      { bottom: 22%; left: 38%; font-size: 23px; padding: 8px 13px; color: var(--text); --t0: rotateX(9deg) rotateY(17deg) translateZ(0px) translateY(0px); --t1: rotateX(9deg) rotateY(17deg) translateZ(0px) translateY(-8px); --op0: 0.40; --op1: 0.48; animation: floatGrade 5.8s ease-in-out infinite; animation-delay: -2.0s; }
-
-.login-right {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 36px;
-  background: var(--bg);
-}
-@media (min-width: 780px) { .login-right { width: 400px; flex-shrink: 0; } }
-
-.login-form { width: 100%; max-width: 320px; }
-.login-logo { font-size: 20px; font-weight: 600; letter-spacing: -0.4px; margin-bottom: 4px; }
-.login-logo span { color: var(--blue); }
-.login-sub { font-size: 13px; color: var(--text2); margin-bottom: 32px; }
-
-.field { margin-bottom: 12px; }
-.field-label { font-size: 11px; font-weight: 500; color: var(--text3); margin-bottom: 7px; letter-spacing: 0.2px; display: block; text-transform: uppercase; }
-.field-input {
-  width: 100%;
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 14px;
-  padding: 11px 14px;
-  border-radius: var(--radius);
-  outline: none;
-  transition: border-color 180ms var(--ease-out), background 180ms var(--ease-out);
-}
-.field-input::placeholder { color: var(--text3); }
-.field-input:focus { border-color: var(--blue); background: var(--bg3); }
-
-.login-btn {
-  width: 100%;
-  background: var(--blue);
-  color: oklch(97% 0.008 252);
-  border: none;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 12px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  margin-top: 6px;
-  letter-spacing: 0.1px;
-  transition: opacity 180ms var(--ease-out), transform 120ms var(--ease-out);
-  touch-action: manipulation;
-}
-.login-btn:hover { opacity: 0.86; }
-.login-btn:active { transform: scale(0.97); }
-.login-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-.login-switch { font-size: 12px; color: var(--text3); text-align: center; margin-top: 14px; cursor: pointer; transition: color 150ms; }
-.login-switch:hover { color: var(--text2); }
-
-#authStatus, #loginStatus { font-size: 12px; margin-top: 10px; min-height: 16px; }
-#authStatus.error, #loginStatus.error { color: var(--red); }
-#authStatus.loading, #loginStatus.loading { color: var(--blue); }
-#authStatus.ok { color: var(--green); }
-
-.spinner { display: inline-block; width: 11px; height: 11px; border: 2px solid var(--border2); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 7px; vertical-align: middle; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ─── APP SHELL ───────────────────────────────────────── */
-#app { display: none; }
-
-.app-scene { position: fixed; top: 0; left: var(--sidebar); right: 0; bottom: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-
-@keyframes appFloat {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(var(--fy, -18px)); }
-}
-.app-float { position: absolute; font-family: 'Geist', sans-serif; font-weight: 600; letter-spacing: -0.05em; line-height: 1; color: var(--blue); user-select: none; will-change: transform; animation: appFloat var(--dur, 9s) ease-in-out infinite; animation-delay: var(--delay, 0s); }
-.af-1 { top: 6%;  left: 68%; font-size: 110px; opacity: 0.028; --dur: 10s;   --delay: 0s;    --fy: -22px; }
-.af-2 { top: 38%; left: 12%; font-size: 88px;  opacity: 0.022; --dur: 13s;   --delay: -4s;   --fy: -16px; }
-.af-3 { top: 62%; left: 78%; font-size: 72px;  opacity: 0.020; --dur: 11s;   --delay: -7s;   --fy: -14px; }
-.af-4 { top: 14%; left: 38%; font-size: 130px; opacity: 0.018; --dur: 15s;   --delay: -2s;   --fy: -26px; }
-.af-5 { top: 75%; left: 45%; font-size: 64px;  opacity: 0.024; --dur: 8.5s;  --delay: -5.5s; --fy: -12px; }
-
-.main {
-  margin-left: var(--sidebar);
-  min-height: 100dvh;
-  overflow-y: auto;
-  position: relative;
-  z-index: 1;
-  background:
-    radial-gradient(ellipse 70% 50% at 80% 8%,  oklch(16% 0.032 260 / 0.22) 0%, transparent 55%),
-    radial-gradient(ellipse 55% 45% at 10% 85%, oklch(14% 0.026 254 / 0.18) 0%, transparent 52%),
-    var(--bg);
-}
-
-.sidebar {
-  width: var(--sidebar);
-  background: linear-gradient(175deg, oklch(15.5% 0.022 256) 0%, oklch(13% 0.017 252) 100%);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  position: fixed;
-  left: 0; top: 0;
-  z-index: 10;
-}
-
-.sidebar-logo { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; padding: 22px 18px 20px; border-bottom: 1px solid var(--border); color: var(--text); flex-shrink: 0; }
-.sidebar-logo span { color: var(--blue); }
-.sidebar-nav { padding: 10px 8px; flex: 1; overflow-y: auto; }
-
-.nav-label { font-size: 9.5px; font-weight: 600; color: var(--text3); letter-spacing: 0.9px; text-transform: uppercase; padding: 10px 10px 5px; opacity: 0; transform: translateX(-5px); }
-.nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 3px; color: var(--text3); font-size: 13px; cursor: pointer; user-select: none; margin-bottom: 1px; opacity: 0; transform: translateX(-5px); transition: background 150ms, color 150ms; }
-.nav-item:hover { background: oklch(100% 0 0 / 0.04); color: var(--text2); }
-.nav-item.active { background: var(--blue-dim); color: var(--blue); font-weight: 500; }
-
-.nav-label.nav-in, .nav-item.nav-in { opacity: 1; transform: translateX(0); transition: opacity 280ms var(--ease-out), transform 280ms var(--ease-out), background 150ms, color 150ms; }
-.nav-icon { width: 15px; height: 15px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-
-.sidebar-bottom { padding: 14px; border-top: 1px solid var(--border); flex-shrink: 0; }
-.streak-block { background: oklch(100% 0 0 / 0.04); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; }
-.streak-label { font-size: 10.5px; color: var(--text3); margin-bottom: 5px; font-weight: 500; letter-spacing: 0.2px; text-transform: uppercase; }
-.streak-val { font-size: 30px; font-weight: 600; color: var(--text); line-height: 1; letter-spacing: -0.5px; }
-.streak-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
-
-.disconnect-btn { width: 100%; background: transparent; border: 1px solid var(--border); color: var(--text3); font-family: inherit; font-size: 12px; padding: 9px; border-radius: var(--radius); cursor: pointer; transition: border-color 150ms, color 150ms, transform 120ms var(--ease-out); touch-action: manipulation; }
-.disconnect-btn:hover { border-color: var(--border2); color: var(--text2); }
-.disconnect-btn:active { transform: scale(0.98); }
-
-/* ─── Pages ───────────────────────────────────────────── */
-.page { display: none; padding: 36px 42px; max-width: 900px; }
-.page.active { display: block; }
-
-@keyframes pageIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
-.page-anim { animation: pageIn 220ms var(--ease-out) both; }
-
-.page-title { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; color: var(--text); margin-bottom: 5px; }
-.page-sub { font-size: 13.5px; color: var(--text2); line-height: 1.65; max-width: 480px; margin-bottom: 30px; }
-
-/* ─── Stat strip ──────────────────────────────────────── */
-.stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: oklch(14% 0.017 252 / 0.7); backdrop-filter: blur(4px); margin-bottom: 34px; }
-.stat-cell { padding: 22px 24px; border-right: 1px solid var(--border); }
-.stat-cell:last-child { border-right: none; }
-.stat-cell.c-blue   { background: var(--blue-dim); }
-.stat-cell.c-orange { background: var(--orange-dim); }
-.stat-cell.c-red    { background: var(--red-dim); }
-.stat-num { font-size: 32px; font-weight: 600; line-height: 1; letter-spacing: -0.6px; margin-bottom: 7px; color: var(--text); }
-.stat-num.c-blue   { color: var(--blue); }
-.stat-num.c-orange { color: var(--orange); }
-.stat-num.c-red    { color: var(--red); }
-.stat-lbl { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.3px; }
-
-.section-head { font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: 0.9px; text-transform: uppercase; margin-bottom: 10px; }
-
-/* ─── Assignment list ─────────────────────────────────── */
-.assign-list { display: flex; flex-direction: column; background: oklch(14% 0.017 252 / 0.65); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; backdrop-filter: blur(4px); }
-
-@keyframes cardIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-
-.assign-card { display: grid; grid-template-columns: 2px 1fr auto; gap: 18px; align-items: center; background: transparent; border-bottom: 1px solid var(--border); padding: 14px 18px; text-decoration: none; color: inherit; cursor: pointer; animation: cardIn 200ms var(--ease-out) both; transition: background 160ms var(--ease-out); }
-.assign-card:last-child { border-bottom: none; }
-@media (hover: hover) and (pointer: fine) { .assign-card:hover { background: oklch(100% 0 0 / 0.03); } }
-.assign-card:active { background: oklch(100% 0 0 / 0.03); transition-duration: 80ms; }
-.assign-card:nth-child(1)   { animation-delay:   0ms; }
-.assign-card:nth-child(2)   { animation-delay:  40ms; }
-.assign-card:nth-child(3)   { animation-delay:  80ms; }
-.assign-card:nth-child(4)   { animation-delay: 116ms; }
-.assign-card:nth-child(5)   { animation-delay: 148ms; }
-.assign-card:nth-child(6)   { animation-delay: 176ms; }
-.assign-card:nth-child(7)   { animation-delay: 200ms; }
-.assign-card:nth-child(n+8) { animation-delay: 220ms; }
-
-.assign-bar { border-radius: 1px; align-self: stretch; min-height: 42px; }
-.bar-upcoming { background: var(--border2); }
-.bar-soon     { background: var(--orange); }
-.bar-missing  { background: var(--red); animation: missingPulse 3s ease-in-out infinite; }
-@keyframes missingPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
-
-.assign-name { font-size: 13.5px; font-weight: 500; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.assign-course { font-size: 12px; color: var(--text2); margin-bottom: 3px; }
-.assign-badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 2px; margin-top: 2px; }
-.badge-missing { background: var(--red-dim);    color: var(--red);    }
-.badge-soon    { background: var(--orange-dim); color: var(--orange); }
-.assign-meta { text-align: right; flex-shrink: 0; }
-.assign-due { font-size: 12px; color: var(--text2); margin-bottom: 3px; white-space: nowrap; }
-.assign-pts { font-size: 11px; color: var(--text3); }
-.grade-impact { display: flex; align-items: center; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
-.gi-now    { font-size: 11px; color: var(--text2);  font-weight: 500; }
-.gi-sep    { font-size: 11px; color: var(--text3); }
-.gi-submit { font-size: 11px; color: var(--green);  font-weight: 500; }
-.gi-miss   { font-size: 11px; color: var(--red);    font-weight: 500; }
-.gi-swing  { font-size: 11px; color: var(--text3); }
-
-/* ─── Filter bar ──────────────────────────────────────── */
-.filter-bar { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 16px; }
-.filter-btn { background: transparent; border: 1px solid var(--border); color: var(--text3); font-family: inherit; font-size: 11.5px; font-weight: 500; padding: 5px 12px; border-radius: var(--radius); cursor: pointer; touch-action: manipulation; letter-spacing: 0.1px; transition: border-color 150ms, color 150ms, background 150ms, transform 120ms var(--ease-out); }
-.filter-btn:hover { border-color: var(--border2); color: var(--text2); }
-.filter-btn:active { transform: scale(0.97); }
-.filter-btn.active { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
-.filter-divider { width: 1px; height: 16px; background: var(--border); margin: 0 3px; flex-shrink: 0; }
-.toggle-wrap { display: flex; align-items: center; gap: 8px; margin-left: 2px; }
-.toggle-label { font-size: 11.5px; color: var(--text2); }
-.toggle { width: 32px; height: 18px; background: var(--bg4); border: 1px solid var(--border2); border-radius: 9px; cursor: pointer; position: relative; flex-shrink: 0; transition: background 200ms var(--ease-out), border-color 200ms var(--ease-out); }
-.toggle.on { background: var(--blue); border-color: var(--blue); }
-.toggle-thumb { position: absolute; width: 12px; height: 12px; background: var(--text3); border-radius: 50%; top: 2px; left: 2px; transition: left 200ms var(--ease-out), background 200ms var(--ease-out); }
-.toggle.on .toggle-thumb { left: 16px; background: oklch(97% 0.008 252); }
-
-/* ─── Grades ──────────────────────────────────────────── */
-.grade-banner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  padding: 9px 14px;
-  border-radius: var(--radius);
-  margin-bottom: 18px;
-  border: 1px solid;
-}
-.grade-banner--ic     { background: var(--green-dim); border-color: oklch(68% 0.140 152 / 0.22); color: var(--green); }
-.grade-banner--canvas { background: var(--blue-dim);  border-color: oklch(62% 0.148 252 / 0.22); color: var(--text2); }
-.grade-banner-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
-.grade-banner-sync { color: var(--text3); margin-left: auto; font-size: 11px; }
-
-.grade-source {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  padding: 2px 5px;
-  border-radius: 2px;
-  display: inline-block;
-  margin-bottom: 8px;
-}
-.grade-source.ic     { background: var(--green-dim); color: var(--green); }
-.grade-source.canvas { background: var(--blue-dim);  color: var(--blue);  }
-
-.grade-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1px; background: var(--border); border-radius: var(--radius); overflow: hidden; }
-.grade-card { background: oklch(14% 0.017 252 / 0.8); padding: 22px 24px; animation: cardIn 220ms var(--ease-out) both; transition: background 160ms var(--ease-out); backdrop-filter: blur(4px); }
-@media (hover: hover) and (pointer: fine) { .grade-card:hover { background: var(--bg3); } }
-.grade-card:nth-child(1)   { animation-delay:   0ms; }
-.grade-card:nth-child(2)   { animation-delay:  50ms; }
-.grade-card:nth-child(3)   { animation-delay: 100ms; }
-.grade-card:nth-child(4)   { animation-delay: 145ms; }
-.grade-card:nth-child(5)   { animation-delay: 185ms; }
-.grade-card:nth-child(n+6) { animation-delay: 220ms; }
-.grade-name { font-size: 11px; color: var(--text3); margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.3px; }
-.grade-pct { font-size: 36px; font-weight: 600; line-height: 1; letter-spacing: -0.8px; margin-bottom: 2px; }
-.grade-letter { font-size: 13px; font-weight: 500; margin-bottom: 16px; }
-.grade-bar-track { height: 1px; background: var(--bg4); overflow: hidden; }
-.grade-bar-fill { height: 100%; width: 0; transition: width 700ms var(--ease-out); }
-.grade-trend { display: block; margin-top: 10px; opacity: 0.85; }
-
-/* ─── Calendar ────────────────────────────────────────── */
-.cal-wrap { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
-@media (max-width: 900px) { .cal-wrap { grid-template-columns: 1fr; } }
-.cal-panel { background: oklch(14% 0.017 252 / 0.65); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; backdrop-filter: blur(4px); }
-.cal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); }
-.cal-month-label { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
-.cal-nav-group { display: flex; gap: 4px; }
-.cal-nav-btn { background: transparent; border: 1px solid var(--border); color: var(--text2); font-family: inherit; font-size: 13px; width: 30px; height: 30px; border-radius: var(--radius); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 150ms, color 150ms, background 150ms; touch-action: manipulation; }
-.cal-nav-btn:hover { border-color: var(--border2); color: var(--text); background: oklch(100% 0 0 / 0.04); }
-.cal-nav-btn:active { transform: scale(0.96); }
-.cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); padding: 10px 14px 4px; gap: 2px; }
-.cal-weekday { text-align: center; font-size: 9.5px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; padding: 4px 0; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); padding: 0 14px 16px; gap: 2px; }
-.cal-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 3px; cursor: pointer; transition: background 130ms var(--ease-out); padding: 3px 2px; }
-.cal-day--empty { cursor: default; pointer-events: none; }
-@media (hover: hover) and (pointer: fine) { .cal-day:not(.cal-day--empty):hover { background: oklch(100% 0 0 / 0.05); } }
-.cal-day-num { font-size: 12px; color: var(--text2); line-height: 1; margin-bottom: 3px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 400; transition: background 130ms, color 130ms; }
-.cal-day--today .cal-day-num { background: var(--blue); color: oklch(97% 0.008 252); font-weight: 600; }
-.cal-day--selected { background: oklch(100% 0 0 / 0.06); }
-.cal-day--selected .cal-day-num { color: var(--text); }
-.cal-day--has .cal-day-num { color: var(--text); font-weight: 500; }
-.cal-dots { display: flex; gap: 2px; justify-content: center; height: 5px; }
-.cal-dot { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; }
-.dot-red    { background: var(--red); }
-.dot-orange { background: var(--orange); }
-.dot-blue   { background: var(--blue); }
-.cal-detail-panel { background: oklch(14% 0.017 252 / 0.65); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; backdrop-filter: blur(4px); min-height: 200px; }
-.cal-detail-head { padding: 16px 18px; border-bottom: 1px solid var(--border); font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: 0.8px; text-transform: uppercase; }
-#calDetail .assign-list { border: none; border-radius: 0; background: transparent; backdrop-filter: none; }
-#calDetail .assign-card { padding: 12px 16px; }
-.ap-wrap   { margin-top:10px; padding-top:8px; border-top:1px solid var(--border); }
-.ap-row    { display:flex; align-items:center; gap:8px; }
-.ap-label  { font-size:11px; color:var(--text3); white-space:nowrap; }
-.ap-slider { flex:1; min-width:80px; max-width:160px; accent-color:var(--blue); height:3px; cursor:pointer; }
-.ap-score  { font-size:12px; font-weight:600; color:var(--text2); min-width:32px; }
-.ap-result { display:block; font-size:12px; font-weight:600; margin-top:4px; min-height:16px; }
-
-/* ─── Settings ────────────────────────────────────────── */
-.settings-card { background: oklch(14% 0.017 252 / 0.65); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; backdrop-filter: blur(4px); }
-
-.settings-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text3);
-  letter-spacing: 0.7px;
-  text-transform: uppercase;
-  padding: 13px 18px;
-  border-bottom: 1px solid var(--border);
-}
-
-.settings-head-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.settings-toggle-label {
-  font-size: 11px;
-  color: var(--text2);
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid var(--border); font-size: 13px; }
-.settings-row:last-child { border-bottom: none; }
-.settings-key { color: var(--text3); }
-.settings-val { color: var(--text); font-weight: 500; }
-.settings-val.ok { color: var(--green); }
-
-/* IC connect form inside settings */
-.ic-connect-body { padding: 18px 18px 14px; }
-.ic-connect-desc { font-size: 12.5px; color: var(--text2); line-height: 1.65; margin-bottom: 18px; }
-.ic-connect-body .field { margin-bottom: 11px; }
-
-.ic-connect-btn {
-  width: 100%;
-  background: var(--blue);
-  color: oklch(97% 0.008 252);
-  border: none;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 500;
-  padding: 11px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  margin-top: 4px;
-  transition: opacity 180ms var(--ease-out), transform 120ms var(--ease-out);
-  touch-action: manipulation;
-}
-.ic-connect-btn:hover { opacity: 0.86; }
-.ic-connect-btn:active { transform: scale(0.97); }
-.ic-connect-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-#icConnectStatus { font-size: 12px; margin-top: 10px; min-height: 16px; }
-#icConnectStatus.error   { color: var(--red); }
-#icConnectStatus.loading { color: var(--blue); }
-#icConnectStatus.ok      { color: var(--green); }
-
-.ic-disconnect-btn {
-  background: transparent;
-  border: 1px solid var(--red-dim);
-  color: var(--red);
-  font-family: inherit;
-  font-size: 12px;
-  padding: 5px 14px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: opacity 150ms, transform 120ms var(--ease-out);
-  touch-action: manipulation;
-}
-.ic-disconnect-btn:hover  { opacity: 0.75; }
-.ic-disconnect-btn:active { transform: scale(0.97); }
-
-/* toggle--disabled */
-.toggle.disabled { opacity: 0.35; pointer-events: none; }
-
-/* ─── Assignment drawer ───────────────────────────────── */
-.drawer-overlay {
-  position: fixed; inset: 0; background: oklch(4% 0.012 252 / 0.72);
-  z-index: 100; opacity: 0; pointer-events: none;
-  transition: opacity 220ms var(--ease-out);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-}
-.drawer-overlay.open { opacity: 1; pointer-events: all; }
-
-.drawer {
-  position: fixed; top: 0; right: 0; bottom: 0;
-  width: min(440px, 100vw);
-  background: oklch(13.5% 0.018 254);
-  border-left: 1px solid var(--border2);
-  z-index: 101;
-  display: flex; flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 280ms var(--ease-out);
-  will-change: transform;
-}
-.drawer.open { transform: translateX(0); }
-
-.drawer-head {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  padding: 24px 24px 18px; border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.drawer-title { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; color: var(--text); max-width: 280px; line-height: 1.35; }
-.drawer-meta  { font-size: 12px; color: var(--text3); margin-top: 4px; }
-.drawer-grade-badge {
-  display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0;
-  margin-left: 12px;
-}
-.drawer-pct { font-size: 28px; font-weight: 600; letter-spacing: -0.6px; line-height: 1; }
-.drawer-letter { font-size: 12px; font-weight: 500; margin-top: 2px; }
-.drawer-close {
-  position: absolute; top: 16px; left: 18px;
-  background: transparent; border: 1px solid var(--border); color: var(--text3);
-  font-family: inherit; font-size: 12px; padding: 4px 10px;
-  border-radius: var(--radius); cursor: pointer;
-  transition: border-color 150ms, color 150ms;
-}
-.drawer-close:hover { border-color: var(--border2); color: var(--text2); }
-
-.drawer-body { flex: 1; overflow-y: auto; padding: 0 16px 24px; }
-
-.drawer-section-head {
-  font-size: 9.5px; font-weight: 600; color: var(--text3); letter-spacing: 0.9px;
-  text-transform: uppercase; padding: 18px 24px 10px;
-}
-
-.asgn-row {
-  display: grid; grid-template-columns: 1fr auto;
-  gap: 12px; align-items: start;
-  padding: 11px 24px; border-bottom: 1px solid var(--border);
-  transition: background 140ms;
-}
-.asgn-row:last-child { border-bottom: none; }
-.asgn-row:hover { background: oklch(100% 0 0 / 0.025); }
-
-.asgn-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.asgn-cat  { font-size: 11px; color: var(--text3); }
-.asgn-due  { font-size: 11px; color: var(--text3); margin-top: 2px; }
-.asgn-score-wrap { text-align: right; flex-shrink: 0; }
-.asgn-score { font-size: 14px; font-weight: 600; letter-spacing: -0.3px; }
-.asgn-max   { font-size: 11px; color: var(--text3); }
-.asgn-badge { display: inline-block; font-size: 9.5px; font-weight: 600; padding: 1px 5px; border-radius: 2px; letter-spacing: 0.3px; vertical-align: middle; }
-.badge-missing { background: var(--red-dim);    color: var(--red);    }
-.badge-late    { background: var(--orange-dim); color: var(--orange); }
-.badge-dropped { background: oklch(100% 0 0 / 0.06); color: var(--text3); }
-.asgn-empty-cat { font-size: 12px; color: var(--text3); padding: 6px 0 4px; font-style: italic; }
-
-/* GPA strip */
-.gpa-strip { display: flex; gap: 10px; padding: 0 0 18px; }
-.gpa-card  { flex: 1; background: oklch(100% 0 0 / 0.03); border: 1px solid oklch(100% 0 0 / 0.07); border-radius: var(--radius); padding: 12px 16px; }
-.gpa-label { font-size: 9.5px; font-weight: 600; color: var(--text3); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 5px; }
-.gpa-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; color: var(--text); }
-
-/* Category weight chips */
-.cat-weight-bar { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 0 6px; }
-.cat-chip { font-size: 11px; padding: 3px 9px; border-radius: 3px; background: oklch(100% 0 0 / 0.04); border: 1px solid oklch(100% 0 0 / 0.08); color: var(--text2); }
-.cat-chip strong { color: var(--text); font-weight: 600; }
-
-/* Grade predictor */
-.predict-banner { font-size: 12.5px; color: var(--text2); padding: 10px 0 14px; line-height: 1.5; }
-.predict-banner strong { color: var(--text); font-weight: 600; }
-.predict-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid oklch(100% 0 0 / 0.06); }
-.predict-row:last-child { border-bottom: none; }
-.predict-slider-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 90px; }
-.predict-slider { width: 88px; accent-color: var(--green); cursor: pointer; }
-.predict-score { font-size: 12px; font-weight: 600; color: var(--text); text-align: right; }
-.predict-section-head { font-size: 9.5px; font-weight: 600; color: var(--green); letter-spacing: 0.9px; text-transform: uppercase; padding: 18px 0 4px; border-top: 1px solid oklch(100% 0 0 / 0.07); margin-top: 8px; }
-.predict-note { font-size: 11px; color: var(--text3); padding: 6px 0; }
-
-.drawer-empty { padding: 40px 24px; text-align: center; color: var(--text3); font-size: 13px; line-height: 1.6; }
-.drawer-loading { padding: 32px 24px; text-align: center; color: var(--text3); font-size: 13px; }
-
-/* ─── Misc ────────────────────────────────────────────── */
-.empty { padding: 48px 24px; text-align: center; color: var(--text3); font-size: 13px; }
-
-/* Grade cards: clickable */
-.grade-card { cursor: pointer; }
-.grade-card:active { transform: scale(0.985); transition: transform 100ms; }
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
-}
-</style>
-</head>
-<body>
-
-<!-- ── LOGIN ─────────────────────────────────────────── -->
-<div id="loginScreen">
-  <div class="login-left">
-    <div class="grade-scene" aria-hidden="true">
-      <div class="grade-float gf-a-ghost">A</div>
-      <div class="grade-float gf-aplus">A+</div>
-      <div class="grade-float gf-100">100</div>
-      <div class="grade-float gf-97">97</div>
-      <div class="grade-float gf-bplus">B+</div>
-      <div class="grade-float gf-94">94</div>
-    </div>
-    <div class="login-brand-mark">Slate<span>.</span></div>
-    <div>
-      <div class="login-tagline">Know exactly where you stand.</div>
-      <div class="login-tagline-sub">Real weighted grades. Impact per assignment. Everything your school portal doesn't show you.</div>
-    </div>
-    <div class="login-stack-note">Canvas LMS · Infinite Campus · NCEDCloud</div>
-  </div>
-
-  <div class="login-right">
-    <div class="login-form">
-      <div id="authStep">
-        <div class="login-logo">Slate<span>.</span></div>
-        <div class="login-sub">Sign in to your account.</div>
-        <div class="field">
-          <label class="field-label" for="email">Email</label>
-          <input class="field-input" id="email" type="email" placeholder="you@school.edu" autocomplete="email" />
-        </div>
-        <div class="field">
-          <label class="field-label" for="password">Password</label>
-          <input class="field-input" id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
-        </div>
-        <button class="login-btn" onclick="authLogin()">Sign in</button>
-        <div class="login-switch" onclick="authSignup()">No account? Sign up</div>
-        <div id="authStatus"></div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- ── APP ───────────────────────────────────────────── -->
-<div id="app">
-
-  <div class="app-scene" aria-hidden="true">
-    <div class="app-float af-1">A+</div>
-    <div class="app-float af-2">97</div>
-    <div class="app-float af-3">A</div>
-    <div class="app-float af-4">100</div>
-    <div class="app-float af-5">B+</div>
-  </div>
-
-  <div class="sidebar">
-    <div class="sidebar-logo">Slate<span>.</span></div>
-    <div class="sidebar-nav">
-      <div class="nav-label">Main</div>
-      <div class="nav-item" data-page="dashboard"   onclick="showPage('dashboard',this)">
-        <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        Dashboard
-      </div>
-      <div class="nav-item" data-page="assignments" onclick="showPage('assignments',this)">
-        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
-        Assignments
-      </div>
-      <div class="nav-item" data-page="grades"      onclick="showPage('grades',this)">
-        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-        Grades
-      </div>
-      <div class="nav-item" data-page="calendar"    onclick="showPage('calendar',this)">
-        <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        Calendar
-      </div>
-      <div class="nav-label" style="margin-top:8px">Account</div>
-      <div class="nav-item" data-page="settings"    onclick="showPage('settings',this)">
-        <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-        Settings
-      </div>
-    </div>
-    <div class="sidebar-bottom">
-      <div class="streak-block">
-        <div class="streak-label">Submission streak</div>
-        <div class="streak-val" id="streakNum">0</div>
-        <div class="streak-sub">days in a row</div>
-      </div>
-      <button class="disconnect-btn" onclick="logout()">Disconnect</button>
-    </div>
-  </div>
-
-  <div class="main">
-
-    <!-- Dashboard -->
-    <div class="page active" id="page-dashboard">
-      <div class="page-title" id="dashGreeting">Good evening.</div>
-      <div class="page-sub" id="dashDesc"></div>
-      <div class="stat-strip">
-        <div class="stat-cell c-blue">   <div class="stat-num c-blue"   id="sUpcoming">—</div><div class="stat-lbl">Upcoming</div></div>
-        <div class="stat-cell c-orange"> <div class="stat-num c-orange" id="sSoon">—</div>    <div class="stat-lbl">Due Soon</div></div>
-        <div class="stat-cell c-red">    <div class="stat-num c-red"    id="sMissing">—</div>  <div class="stat-lbl">Missing</div></div>
-        <div class="stat-cell c-dim">    <div class="stat-num"          id="sTotal">—</div>    <div class="stat-lbl">Total</div></div>
-      </div>
-      <div class="section-head">Priority right now</div>
-      <div class="assign-list" id="priorityList"></div>
-    </div>
-
-    <!-- Assignments -->
-    <div class="page" id="page-assignments">
-      <div class="page-title">Assignments</div>
-      <div class="page-sub">All your work across every course.</div>
-      <div class="filter-bar">
-        <button class="filter-btn active" id="sf-upcoming" onclick="setSF('upcoming')">Upcoming</button>
-        <button class="filter-btn" id="sf-soon"    onclick="setSF('soon')">Due Soon</button>
-        <button class="filter-btn" id="sf-missing" onclick="setSF('missing')">Missing</button>
-        <button class="filter-btn" id="sf-all"     onclick="setSF('all')">All</button>
-        <div class="filter-divider"></div>
-        <button class="filter-btn active" id="qf-all" onclick="setQF('all')">All year</button>
-        <button class="filter-btn" id="qf-Q1" onclick="setQF('Q1')">Q1</button>
-        <button class="filter-btn" id="qf-Q2" onclick="setQF('Q2')">Q2</button>
-        <button class="filter-btn" id="qf-Q3" onclick="setQF('Q3')">Q3</button>
-        <button class="filter-btn" id="qf-Q4" onclick="setQF('Q4')">Q4</button>
-        <div class="filter-divider"></div>
-        <div class="toggle-wrap">
-          <span class="toggle-label">Hide no due date</span>
-          <div class="toggle" id="nddToggle" onclick="toggleNDD()"><div class="toggle-thumb"></div></div>
-        </div>
-      </div>
-      <div class="assign-list" id="assignList"></div>
-    </div>
-
-    <!-- Grades -->
-    <div class="page" id="page-grades">
-      <div class="page-title">Grades</div>
-      <div class="page-sub">Your current standing across all courses.</div>
-
-      <!-- IC active banner -->
-      <div class="grade-banner grade-banner--ic" id="icGradeBanner" style="display:none">
-        <span class="grade-banner-dot"></span>
-        Official grades from Infinite Campus
-        <span class="grade-banner-sync" id="icGradeSyncTime"></span>
-      </div>
-
-      <!-- Canvas fallback notice -->
-      <div class="grade-banner grade-banner--canvas" id="canvasGradeBanner" style="display:none">
-        Showing Canvas grades — connect Infinite Campus in Settings for official grades.
-      </div>
-
-      <div class="filter-bar" id="gradeFilterBar">
-        <button class="filter-btn active" id="gqf-all" onclick="setGQF('all')">All year</button>
-        <button class="filter-btn" id="gqf-Q1" onclick="setGQF('Q1')">Q1</button>
-        <button class="filter-btn" id="gqf-Q2" onclick="setGQF('Q2')">Q2</button>
-        <button class="filter-btn" id="gqf-Q3" onclick="setGQF('Q3')">Q3</button>
-        <button class="filter-btn" id="gqf-Q4" onclick="setGQF('Q4')">Q4</button>
-        <button class="filter-btn" id="gqf-Final" onclick="setGQF('Final')">Final</button>
-      </div>
-      <div id="gpaStrip" style="display:none" class="gpa-strip">
-        <div class="gpa-card">
-          <div class="gpa-label">Weighted GPA</div>
-          <div class="gpa-value" id="gpaWeighted">—</div>
-        </div>
-        <div class="gpa-card">
-          <div class="gpa-label">Unweighted GPA</div>
-          <div class="gpa-value" id="gpaUnweighted">—</div>
-        </div>
-      </div>
-      <div class="grade-grid" id="gradeGrid"></div>
-    </div>
-
-    <!-- Calendar -->
-    <div class="page" id="page-calendar">
-      <div class="page-title">Calendar</div>
-      <div class="page-sub">Every due date across all courses, in one view.</div>
-      <div class="cal-wrap">
-        <div class="cal-panel">
-          <div class="cal-header">
-            <span class="cal-month-label" id="calMonthLabel">—</span>
-            <div class="cal-nav-group">
-              <button class="cal-nav-btn" onclick="calPrev()" aria-label="Previous month">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
-              </button>
-              <button class="cal-nav-btn" onclick="calNext()" aria-label="Next month">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
-              </button>
-            </div>
-          </div>
-          <div class="cal-weekdays">
-            <div class="cal-weekday">Su</div><div class="cal-weekday">Mo</div><div class="cal-weekday">Tu</div>
-            <div class="cal-weekday">We</div><div class="cal-weekday">Th</div><div class="cal-weekday">Fr</div>
-            <div class="cal-weekday">Sa</div>
-          </div>
-          <div class="cal-grid" id="calGrid"></div>
-        </div>
-        <div class="cal-detail-panel">
-          <div class="cal-detail-head" id="calDetailHead">Select a date</div>
-          <div id="calDetail"><div class="empty">Click any day to see assignments due.</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Settings -->
-    <div class="page" id="page-settings">
-      <div class="page-title">Settings</div>
-      <div class="page-sub">Connections, integrations, and your academic calendar.</div>
-
-      <!-- Canvas -->
-      <div class="settings-card">
-        <div class="settings-head">Canvas Connection</div>
-        <div id="canvasConnectForm">
-          <div class="ic-connect-body">
-            <p class="ic-connect-desc">Connect Canvas to see upcoming assignments, due dates, and grade predictions for assignments not yet in IC.</p>
-            <div class="field">
-              <label class="field-label" for="cvDomain">School domain</label>
-              <input class="field-input" id="cvDomain" type="text" placeholder="school.instructure.com" autocomplete="off" />
-            </div>
-            <div class="field" style="margin-bottom:0">
-              <label class="field-label" for="cvToken">Canvas API token</label>
-              <input class="field-input" id="cvToken" type="password" placeholder="Paste your token here" autocomplete="off" />
-            </div>
-            <button class="ic-connect-btn" id="canvasConnectBtn" onclick="connectCanvas()">Connect Canvas</button>
-            <div id="canvasConnectStatus"></div>
-          </div>
-        </div>
-        <div id="canvasConnectedState" style="display:none">
-          <div class="settings-row"><span class="settings-key">Status</span><span class="settings-val ok">Connected</span></div>
-          <div class="settings-row"><span class="settings-key">Domain</span><span class="settings-val" id="settingsDomain">—</span></div>
-          <div class="settings-row">
-            <span class="settings-key"></span>
-            <button class="ic-disconnect-btn" onclick="disconnectCanvas()">Disconnect</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Infinite Campus -->
-      <div class="settings-card">
-        <div class="settings-head">
-          Infinite Campus
-          <div class="settings-head-right">
-            <span class="settings-toggle-label">Use IC grades</span>
-            <div class="toggle disabled" id="icGradesToggle" onclick="toggleICGrades()">
-              <div class="toggle-thumb"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Not connected: connect form -->
-        <div id="icConnectForm">
-          <div class="ic-connect-body">
-            <p class="ic-connect-desc">Connect Infinite Campus to display official grades from your school's primary system — not Canvas estimates. Uses your NCEDCloud credentials.</p>
-            <div class="field">
-              <label class="field-label" for="icUsername">NCEDCloud username</label>
-              <input class="field-input" id="icUsername" type="text" placeholder="Your school username" autocomplete="username" />
-            </div>
-            <div class="field">
-              <label class="field-label" for="icPassword">NCEDCloud password</label>
-              <input class="field-input" id="icPassword" type="password" placeholder="••••••••" autocomplete="current-password" />
-            </div>
-            <div class="field" style="margin-bottom:0">
-              <label class="field-label" for="icDomain">Infinite Campus domain</label>
-              <input class="field-input" id="icDomain" type="text" placeholder="e.g. 600.ncsis.gov or district.infinitecampus.org" autocomplete="off" />
-            </div>
-            <button class="ic-connect-btn" id="icConnectBtn" onclick="connectIC()">Connect Infinite Campus</button>
-            <div id="icConnectStatus"></div>
-          </div>
-        </div>
-
-        <!-- Connected state -->
-        <div id="icConnectedState" style="display:none">
-          <div class="settings-row"><span class="settings-key">Status</span><span class="settings-val ok">Connected</span></div>
-          <div class="settings-row"><span class="settings-key">Domain</span><span class="settings-val" id="icDomainDisplay">—</span></div>
-          <div class="settings-row"><span class="settings-key">Last synced</span><span class="settings-val" id="icSyncedDisplay">—</span></div>
-          <div class="settings-row"><span class="settings-key">Sync interval</span><span class="settings-val">Every 20 min</span></div>
-          <div class="settings-row">
-            <span class="settings-key" id="icSyncStatus" style="font-size:11px"></span>
-            <div style="display:flex;gap:8px;align-items:center">
-              <button class="ic-disconnect-btn" id="icSyncBtn" onclick="syncICNow()" style="border-color:var(--border2);color:var(--text2)">Sync now</button>
-              <button class="ic-disconnect-btn" onclick="disconnectIC()">Disconnect</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Academic Calendar -->
-      <div class="settings-card">
-        <div class="settings-head">Academic Calendar</div>
-        <div class="settings-row"><span class="settings-key">Q1</span><span class="settings-val">Aug 25 – Oct 17, 2025</span></div>
-        <div class="settings-row"><span class="settings-key">Q2</span><span class="settings-val">Oct 20, 2025 – Jan 16, 2026</span></div>
-        <div class="settings-row"><span class="settings-key">Q3</span><span class="settings-val">Jan 20 – Mar 20, 2026</span></div>
-        <div class="settings-row"><span class="settings-key">Q4</span><span class="settings-val">Mar 23 – Jun 12, 2026</span></div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ── Assignment Detail Drawer ──────────────────────── -->
-<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-<div class="drawer" id="assignDrawer" role="dialog" aria-modal="true" aria-label="Course assignments">
-  <div class="drawer-head">
-    <button class="drawer-close" onclick="closeDrawer()">← Back</button>
-    <div style="margin-top:36px;flex:1">
-      <div class="drawer-title" id="drawerTitle">—</div>
-      <div class="drawer-meta"  id="drawerMeta"></div>
-    </div>
-    <div class="drawer-grade-badge" style="margin-top:36px">
-      <div class="drawer-pct"    id="drawerPct">—</div>
-      <div class="drawer-letter" id="drawerLetter"></div>
-    </div>
-  </div>
-  <div class="drawer-body" id="drawerBody">
-    <div class="drawer-empty">Loading assignments…</div>
-  </div>
-</div>
-
-<script>
-'use strict';
-
-let all = [], sf = 'upcoming', qf = 'all', gqf = 'all', hideNDD = false;
-let userToken = null;
-let calYear, calMonth, calSelectedDay = null;
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-// IC state
-let _ic = { connected: false, enabled: false, domain: null, grades: [], synced_at: null };
-
-const quarters = {
-  Q1: [new Date('2025-08-25'), new Date('2025-10-17')],
-  Q2: [new Date('2025-10-20'), new Date('2026-01-16')],
-  Q3: [new Date('2026-01-20'), new Date('2026-03-20')],
-  Q4: [new Date('2026-03-23'), new Date('2026-06-12')],
-};
-
-function getQ(raw) {
-  if (!raw) return null;
-  const d = new Date(raw);
-  for (const [q,[s,e]] of Object.entries(quarters)) if (d >= s && d <= e) return q;
-  return null;
-}
-
-function computeGPA(grades) {
-  const valid = grades.filter(c => c.grade != null && c.grade > 0);
-  if (!valid.length) return { weighted: null, unweighted: null };
-  let wSum = 0, uwSum = 0;
-  valid.forEach(c => {
-    const p = c.grade;
-    const pts = p >= 90 ? 4.0 : p >= 80 ? 3.0 : p >= 70 ? 2.0 : p >= 60 ? 1.0 : 0.0;
-    const n   = c.name.toLowerCase();
-    const bonus = (n.includes('ap ') || n.startsWith('ap') || / ap$/.test(n)) ? 1.0
-                : n.includes('honors') ? 0.5 : 0.0;
-    uwSum += pts;
-    wSum  += pts + bonus;
-  });
-  const n = valid.length;
-  return { weighted: (wSum / n).toFixed(2), unweighted: (uwSum / n).toFixed(2) };
-}
-
-function predictGrade(cats, hypotheticals) {
-  let weightedSum = 0, totalUsedWeight = 0;
-  cats.forEach(cat => {
-    const scored = cat.assignments.filter(a => !a.notGraded && !a.missing && !a.dropped && a.score != null);
-    let earned   = scored.reduce((s, a) => s + parseFloat(a.score  || 0), 0);
-    let possible = scored.reduce((s, a) => s + parseFloat(a.max    || 100), 0);
-    hypotheticals.forEach(h => {
-      if (h.cat && h.cat.toLowerCase() === cat.name.toLowerCase()) {
-        earned   += h.score;
-        possible += 100;
-      }
-    });
-    if (possible > 0) {
-      weightedSum      += (earned / possible * 100) * cat.weight;
-      totalUsedWeight  += cat.weight;
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+import re
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime, timezone
+from urllib.parse import urljoin
+import os
+import json
+import logging
+import atexit
+import time
+from cryptography.fernet import Fernet
+from apscheduler.schedulers.background import BackgroundScheduler
+from supabase import create_client
+try:
+    import resend as _resend
+    _resend_available = True
+except ImportError:
+    _resend_available = False
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
+
+SUPABASE_URL     = "https://ktkwtlrnrzrnigevvccc.supabase.co"
+SUPABASE_KEY     = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0a3d0bHJucnpybmlnZXZ2Y2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyNTQ5NDIsImV4cCI6MjA5MjgzMDk0Mn0.RuKhrCpfa-kl16dQ1FBdi6v3crZUPcyB-xPDkW7nmYo"
+SUPABASE_SERVICE = os.environ.get('SUPABASE_SERVICE_KEY', '')
+
+_auth   = create_client(SUPABASE_URL, SUPABASE_KEY)                                          # auth ops only
+_admin  = create_client(SUPABASE_URL, SUPABASE_SERVICE) if SUPABASE_SERVICE else None        # bypasses RLS for background sync
+
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+if _resend_available and RESEND_API_KEY:
+    _resend.api_key = RESEND_API_KEY
+
+def user_db(token: str):
+    """Per-request client scoped to a user's JWT — satisfies RLS without mutating global state."""
+    c = create_client(SUPABASE_URL, SUPABASE_KEY)
+    c.postgrest.auth(token)
+    return c
+
+app = Flask(__name__, static_folder='static')
+CORS(app)
+
+# ── Encryption ─────────────────────────────────────────────────────────────────
+# Generate a key once:  python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# Then set CREDENTIAL_KEY=<that value> in your environment / Replit secrets.
+_raw_key = os.environ.get('CREDENTIAL_KEY')
+if not _raw_key:
+    log.warning("CREDENTIAL_KEY not set — generating ephemeral key. Stored IC credentials will break on restart.")
+    _raw_key = Fernet.generate_key().decode()
+
+fernet = Fernet(_raw_key.encode() if isinstance(_raw_key, str) else _raw_key)
+
+def encrypt_val(s: str) -> str:
+    return fernet.encrypt(s.encode()).decode()
+
+def decrypt_val(s: str) -> str:
+    return fernet.decrypt(s.encode()).decode()
+
+# ── Auth helper ────────────────────────────────────────────────────────────────
+def get_uid(auth_header: str) -> str:
+    token = auth_header.replace('Bearer ', '').strip()
+    user = _auth.auth.get_user(token)
+    return user.user.id
+
+# ── NCEDCloud + Infinite Campus ────────────────────────────────────────────────
+NCEDCLOUD_BASE = 'https://ncedcloud.mcnc.org'
+USER_AGENT = (
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+    'AppleWebKit/537.36 (KHTML, like Gecko) '
+    'Chrome/124.0.0.0 Safari/537.36'
+)
+
+def _make_session() -> requests.Session:
+    sess = requests.Session()
+    sess.headers['User-Agent'] = USER_AGENT
+    return sess
+
+def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
+    """
+    NCEDCloud → Infinite Campus SSO + grade fetch, all via one Playwright session.
+    Fetches grades while the browser is still open — avoids cookie transfer issues
+    (IC ties sessions to browser fingerprint server-side).
+    Returns list of course dicts. Raises ValueError on bad credentials.
+    """
+    import re as _re
+    from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+
+    # ── Step 1: Find SSO URL via requests (fast, no browser needed) ───────────
+    try:
+        r = requests.get(f'https://{ic_domain}/campus/', timeout=15,
+                         allow_redirects=True, headers={'User-Agent': USER_AGENT})
+        r.raise_for_status()
+    except requests.RequestException as e:
+        raise RuntimeError(f'Could not reach IC domain {ic_domain}: {e}')
+
+    soup = BeautifulSoup(r.text, 'html.parser')
+    sso_url = None
+    app_match = _re.search(r'/campus/([^/]+?)(?:\.jsp)?(?:\?|$)', r.url)
+    appname = app_match.group(1) if app_match else None
+
+    sel = soup.find('select', {'id': _re.compile(r'saml.*select', _re.I)}) or \
+          soup.find('select', {'name': _re.compile(r'saml|sso|config', _re.I)})
+    if sel:
+        for opt in sel.find_all('option'):
+            if 'ncedcloud' in opt.get_text(strip=True).lower():
+                val = opt.get('value', '').strip()
+                if val.startswith('http'):
+                    sso_url = val
+                elif val.startswith('/'):
+                    sso_url = urljoin(f'https://{ic_domain}', val)
+                elif val and appname:
+                    sso_url = f'https://{ic_domain}/campus/SSO/{appname}/sis?configID={val}'
+                break
+
+    if not sso_url:
+        for a in soup.find_all('a', href=True):
+            if 'ncedcloud' in (a.get_text(strip=True) + a['href']).lower():
+                sso_url = urljoin(r.url, a['href']); break
+
+    if not sso_url and appname:
+        sso_url = f'https://{ic_domain}/campus/SSO/{appname}/sis?configID=1'
+
+    if not sso_url:
+        raise RuntimeError(f'Could not find NCEDCloud SSO option on {ic_domain}.')
+
+    log.info(f'NCEdCloud SSO URL: {sso_url}')
+
+    # ── Step 2: Playwright handles the JS-driven SAML SSO flow ───────────────
+    log.info('Playwright: starting browser launch...')
+    with sync_playwright() as p:
+        log.info('Playwright: sync_playwright context entered')
+        browser = p.chromium.launch(
+            headless=True,
+            args=[
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--single-process',
+                '--disable-extensions',
+                '--disable-background-networking',
+            ]
+        )
+        log.info('Playwright: browser launched')
+        context = browser.new_context(user_agent=USER_AGENT)
+        context.set_default_timeout(60000)  # 60s max per operation
+        page = context.new_page()
+
+        # ── Intercept ALL JSON API responses from the very start ──────────────
+        # IC fires grade API calls during the initial portal load right after
+        # the SAML redirect — we must be listening before goto(sso_url).
+        grade_data_map = {}
+
+        def _capture_json(response):
+            if response.status != 200:
+                return
+            ct = response.headers.get('content-type', '')
+            if 'json' not in ct:
+                return
+            try:
+                body = response.json()
+                grade_data_map[response.url] = body
+                log.info(f'IC intercepted: {response.url}')
+            except BaseException:
+                pass
+
+        page.on('response', _capture_json)
+
+        try:
+            # Navigate to NCEDCloud SSO entry point
+            # Use 'load' not 'networkidle' — Ember SPA fires constant XHR, networkidle never fires
+            page.goto(sso_url, wait_until='load', timeout=60000)
+            log.info(f'Playwright: landed on {page.url}')
+
+            if 'idp.ncedcloud.org' not in page.url:
+                raise RuntimeError(f'Expected NCEDCloud IDP, got {page.url}')
+
+            # Fill username (Ember SPA — wait for JS to render any input field)
+            page.wait_for_selector('input:visible')
+            page.locator('input:visible').first.fill(username)
+            log.info('Playwright: username filled')
+
+            # Submit username
+            try:
+                page.locator('button:visible').first.click()
+            except Exception:
+                page.keyboard.press('Enter')
+
+            # Fill password
+            page.wait_for_selector('input[type="password"]')
+            page.fill('input[type="password"]', password)
+            log.info('Playwright: password filled')
+
+            # Submit password — try button first, fall back to Enter
+            try:
+                page.locator('button:visible').first.click()
+            except Exception:
+                page.keyboard.press('Enter')
+            log.info(f'Playwright: password submitted, current url={page.url}')
+
+            # Wait for navigation away from NCEDCloud IDP.
+            # Don't glob-match the final URL — the redirect chain can be multi-hop.
+            # Instead, wait until we leave idp.ncedcloud.org, then let it settle.
+            try:
+                # wait_for_function uses eval() which NCEDCloud CSP blocks.
+                # wait_for_url with a Python lambda predicate — no JS eval, no CSP issue.
+                page.wait_for_url(
+                    lambda url: 'idp.ncedcloud.org' not in url,
+                    timeout=90000
+                )
+                log.info(f'Playwright: left NCEDCloud IDP, now at {page.url}')
+                # Let any further redirect chain complete
+                try:
+                    page.wait_for_load_state('networkidle', timeout=15000)
+                except Exception:
+                    pass  # networkidle may never fire on Ember; that's fine
+                log.info(f'Playwright: settled at {page.url}')
+                if ic_domain not in page.url:
+                    body_text = page.inner_text('body')
+                    if any(w in body_text.lower() for w in ('invalid', 'incorrect', 'failed', 'denied')):
+                        raise ValueError('Invalid NCEDCloud username or password.')
+                    raise RuntimeError(
+                        f'SSO did not land on IC domain. Ended at: {page.url}'
+                    )
+                log.info(f'Playwright: IC session established at {page.url}')
+            except PWTimeout:
+                body_text = page.inner_text('body')
+                if any(w in body_text.lower() for w in ('invalid', 'incorrect', 'failed', 'denied')):
+                    raise ValueError('Invalid NCEDCloud username or password.')
+                raise RuntimeError('NCEDCloud SSO timed out — may still be on IDP after 90s.')
+
+            # ── Fetch grades from confirmed endpoints ─────────────────────────
+            # URLs confirmed from browser network tab:
+            # /campus/resources/portal/grades        — 118 kB, full grade data
+            # /campus/api/portal/assignment/recentlyScored — all assignments
+            base = f'https://{ic_domain}'
+            courses = []
+
+            try:
+                page.goto(f'{base}/campus/resources/portal/grades',
+                          wait_until='domcontentloaded', timeout=60000)
+                raw = page.inner_text('body').strip()
+                log.info(f'IC grades body[:2000]={raw[:2000]}')
+                courses = _normalize_ic_api(json.loads(raw), None)
+                log.info(f'IC grades: {len(courses)} courses')
+            except Exception as e:
+                log.info(f'IC grades endpoint failed: {e}')
+
+            # ── Fetch per-course category detail (weights + assignments) ─────
+            # Must use page.evaluate(fetch) not page.goto — this is an XHR-only
+            # endpoint; browser navigation returns the SPA HTML shell, not JSON.
+            for c in courses:
+                sid = c.get('section_id')
+                if not sid:
+                    c['categories_by_term'] = {}
+                    c['assignments'] = []
+                    continue
+                try:
+                    url = (f'{base}/campus/resources/portal/grades/detail/{sid}'
+                           f'?showAllTerms=true&classroomSectionID={sid}')
+                    detail = page.evaluate(f'''
+                        async () => {{
+                            const r = await fetch("{url}");
+                            if (!r.ok) return {{}};
+                            return r.json();
+                        }}
+                    ''')
+                    cats_by_term = {}
+                    all_asgns    = []
+                    for d in detail.get('details', []):
+                        term_name = _normalize_term(d.get('task', {}).get('termName', 'Unknown'))
+                        cats = []
+                        for cat in d.get('categories', []):
+                            asgns = []
+                            for a in cat.get('assignments', []):
+                                asgn = {
+                                    'name':       a.get('assignmentName', ''),
+                                    'due':        a.get('dueDate', ''),
+                                    'score':      a.get('scorePoints'),
+                                    'max':        a.get('totalPoints'),
+                                    'pct':        a.get('scorePercentage'),
+                                    'missing':    a.get('missing', False),
+                                    'late':       a.get('late', False),
+                                    'dropped':    a.get('dropped', False),
+                                    'incomplete': a.get('incomplete', False),
+                                    'notGraded':  a.get('notGraded', False),
+                                    'category':   cat.get('name', ''),
+                                }
+                                asgns.append(asgn)
+                                all_asgns.append(asgn)
+                            cats.append({
+                                'name':        cat.get('name', 'Other'),
+                                'weight':      cat.get('weight', 0),
+                                'assignments': asgns,
+                            })
+                        if len(cats) > len(cats_by_term.get(term_name, [])):
+                            cats_by_term[term_name] = cats
+                    c['categories_by_term'] = cats_by_term
+                    c['assignments']         = all_asgns
+                    log.info(f'IC detail section={sid}: {len(cats_by_term)} terms, {len(all_asgns)} assignments')
+                except Exception as e:
+                    log.info(f'IC detail fetch failed section={sid}: {e}')
+                    c['categories_by_term'] = {}
+                    c['assignments']         = []
+
+            log.info(f'IC Playwright pull complete: {len(courses)} courses')
+            return courses
+
+        except (ValueError, RuntimeError):
+            raise
+        except Exception as e:
+            raise RuntimeError(f'NCEDCloud SSO error: {e}')
+        finally:
+            browser.close()
+
+
+def _follow_saml(sess: requests.Session, soup: BeautifulSoup) -> bool:
+    """If the page contains a SAML auto-submit form, POST it. Returns True if posted."""
+    for form in soup.find_all('form'):
+        saml_inp = form.find('input', {'name': 'SAMLResponse'})
+        if saml_inp:
+            saml_payload = {
+                inp['name']: inp.get('value', '')
+                for inp in form.find_all('input')
+                if inp.get('name')
+            }
+            saml_action = form.get('action', '')
+            log.info(f'SAML form found → POST {saml_action} payload_keys={list(saml_payload.keys())}')
+            if saml_action:
+                try:
+                    r = sess.post(saml_action, data=saml_payload, timeout=15, allow_redirects=True)
+                    log.info(f'SAML POST → {r.status_code} final_url={r.url}')
+                    return True
+                except requests.RequestException as e:
+                    log.warning(f'SAML POST failed: {e}')
+    log.info('_follow_saml: no SAMLResponse form found on this page')
+    return False
+
+
+def ic_pull_grades(sess: requests.Session, ic_domain: str) -> list:
+    """
+    Fetch current course grades + assignments from IC.
+    Tries REST API first, falls back to HTML scraping.
+    Returns list of dicts: [{name, grade, letter, term, source, assignments:[]}]
+    """
+    base = f'https://{ic_domain}'
+    courses = []
+
+    # ── Attempt 1: Discover personID ──────────────────────────────────────────
+    person_id = None
+    for path in ['/campus/api/portal/students', '/campus/api/portal/student']:
+        try:
+            r = sess.get(f'{base}{path}', timeout=10)
+            log.info(f'IC students endpoint {path} → {r.status_code}')
+            if r.status_code == 200:
+                d = r.json()
+                if isinstance(d, list):
+                    d = d[0] if d else {}
+                person_id = (d.get('personID') or d.get('id') or
+                             d.get('studentID') or d.get('student', {}).get('personID'))
+                log.info(f'IC students response keys: {list(d.keys()) if isinstance(d, dict) else "not a dict"}')
+                if person_id:
+                    break
+        except Exception as e:
+            log.info(f'IC students {path} error: {e}')
+
+    # ── Attempt 2: REST grades with personID ──────────────────────────────────
+    if person_id:
+        for path in [
+            f'/campus/api/portal/students/{person_id}/grades',
+            f'/campus/api/portal/grades?personID={person_id}',
+            f'/campus/api/portal/students/{person_id}/roster?_expand=%7Bsection%7D',
+            f'/campus/api/portal/students/{person_id}/term',
+            f'/campus/api/portal/students/{person_id}/schoolYears',
+        ]:
+            try:
+                r = sess.get(f'{base}{path}', timeout=10)
+                log.info(f'IC grades {path} → {r.status_code} len={len(r.text)}')
+                if r.status_code == 200 and r.text.strip():
+                    log.info(f'IC grades {path} body[:400]={r.text[:400]}')
+                    courses = _normalize_ic_api(r.json(), person_id)
+                    if courses:
+                        break
+            except Exception as e:
+                log.info(f'IC grades {path} error: {e}')
+
+    # ── Attempt 3: Generic grade endpoints ────────────────────────────────────
+    if not courses:
+        for path in ['/campus/api/portal/grades', '/campus/api/portal/students/courses']:
+            try:
+                r = sess.get(f'{base}{path}', timeout=10)
+                log.info(f'IC generic {path} → {r.status_code} len={len(r.text)}')
+                if r.status_code == 200 and r.text.strip():
+                    courses = _normalize_ic_api(r.json(), person_id)
+                    if courses:
+                        break
+            except Exception as e:
+                log.info(f'IC generic {path} error: {e}')
+
+    # ── Attempt 4: HTML grade page (most reliable fallback after SSO) ─────────
+    if not courses:
+        try:
+            r = sess.get(f'{base}/campus/prism', params={'x': 'portal.PortalGrades'}, timeout=10)
+            log.info(f'IC HTML prism → {r.status_code} len={len(r.text)} body[:300]={r.text[:300]}')
+            if r.status_code == 200:
+                courses = _parse_ic_html(r.text)
+                log.info(f'IC HTML parse → {len(courses)} courses')
+        except Exception as e:
+            log.info(f'IC HTML error: {e}')
+
+    # ── Attempt 5: Alternate portal page ──────────────────────────────────────
+    if not courses:
+        try:
+            r = sess.get(f'{base}/campus/portal/grades.jsp', timeout=10)
+            log.info(f'IC grades.jsp → {r.status_code} len={len(r.text)}')
+            if r.status_code == 200:
+                courses = _parse_ic_html(r.text)
+        except Exception as e:
+            log.info(f'IC grades.jsp error: {e}')
+
+    # ── Fetch assignments for each course ─────────────────────────────────────
+    if courses and person_id:
+        for c in courses:
+            c['assignments'] = _fetch_ic_assignments(sess, base, person_id, c)
+    elif courses:
+        for c in courses:
+            c.setdefault('assignments', [])
+
+    log.info(f'IC pull complete: {len(courses)} courses')
+    return courses
+
+
+def _fetch_ic_assignments(sess, base, person_id, course):
+    """Fetch assignment-level data for a single IC course."""
+    assignments = []
+    section_id = course.get('section_id') or course.get('sectionID')
+
+    # Try REST assignment endpoint
+    if section_id:
+        try:
+            r = sess.get(
+                f'{base}/campus/api/portal/students/{person_id}/grades/{section_id}/assignments',
+                timeout=10
+            )
+            if r.status_code == 200:
+                raw = r.json()
+                items = raw if isinstance(raw, list) else raw.get('assignments', [])
+                for a in items:
+                    assignments.append({
+                        'name':     a.get('assignmentName') or a.get('name', 'Unknown'),
+                        'category': a.get('categoryName') or a.get('category', ''),
+                        'score':    a.get('score'),
+                        'max':      a.get('totalPoints') or a.get('maxScore') or a.get('pointsPossible'),
+                        'percent':  a.get('percent'),
+                        'due':      a.get('dueDate') or a.get('due'),
+                    })
+        except Exception:
+            pass
+
+    return assignments
+
+
+def _normalize_term(raw: str) -> str:
+    """Normalize IC termName variants to Q1/Q2/Q3/Q4/Final."""
+    if not raw:
+        return raw
+    raw = raw.strip()
+    m = re.search(r'Q([1-4])', raw, re.IGNORECASE)
+    if m:
+        return f'Q{m.group(1)}'
+    if re.search(r'final|exam', raw, re.IGNORECASE):
+        return 'Final'
+    return raw
+
+
+def _normalize_ic_api(data, person_id=None) -> list:
+    """
+    Normalise IC /campus/resources/portal/grades response into Slate's grade format.
+    Structure: [{enrollmentID, terms:[{termName, courses:[{courseName, ...grade fields}]}]}]
+    """
+    courses = []
+
+    # Flatten enrollment → terms → courses, keeping only the active term
+    enrollments = data if isinstance(data, list) else [data]
+    flat_courses = []
+    today = datetime.now(timezone.utc).date()
+
+    for enrollment in enrollments:
+        if not isinstance(enrollment, dict):
+            continue
+        for term in enrollment.get('terms', []):
+            term_name  = term.get('termName') or term.get('term', '')
+            term_start = term.get('startDate', '')
+            term_end   = term.get('endDate', '')
+            for course in term.get('courses', []):
+                flat_courses.append((term_name, term_start, term_end, course))
+
+    # If no nested structure found, try treating data as flat course list
+    if not flat_courses:
+        items = data if isinstance(data, list) else data.get('courses', [])
+        flat_courses = [(c.get('termName', ''), '', '', c) for c in items if isinstance(c, dict)]
+
+    for term_name, term_start, term_end, item in flat_courses:
+        try:
+            name = (item.get('courseName') or item.get('name') or
+                    item.get('courseTitle') or 'Unknown Course')
+
+            # Grade lives inside gradingTasks[] — find the portal Term Grade task
+            grading_tasks = item.get('gradingTasks') or []
+            task = next(
+                (t for t in grading_tasks if t.get('portal') and t.get('taskName') == 'Term Grade'),
+                next((t for t in grading_tasks if t.get('portal')), None) or
+                (grading_tasks[0] if grading_tasks else None)
+            )
+
+            if not task:
+                log.info(f'IC skip {name}: no gradingTask (tasks={len(grading_tasks)})')
+                continue
+
+            pct = task.get('percent') or task.get('progressPercent')
+            score_str = task.get('score') or task.get('progressScore')
+            task_term = _normalize_term(task.get('termName') or term_name)
+
+            log.info(f'IC course {name} | term={task_term} | pct={pct} | score={score_str} | portal={task.get("portal")}')
+
+            if pct is None:
+                log.info(f'IC skip {name}: pct is None, task keys={list(task.keys())}')
+                continue
+
+            courses.append({
+                'name':       str(name).strip(),
+                'grade':      float(pct),
+                'letter':     str(score_str).strip() if score_str else None,
+                'term':       str(task_term).strip(),
+                'term_start': term_start,
+                'term_end':   term_end,
+                'source':     'ic',
+                'section_id': item.get('sectionID') or item.get('sectionId'),
+            })
+        except Exception:
+            continue
+
+    return courses
+
+
+def _parse_ic_html(html: str) -> list:
+    """Fallback: parse IC's PortalGrades HTML page into grade records."""
+    soup = BeautifulSoup(html, 'html.parser')
+    courses = []
+
+    # IC grade tables typically have class "portalTable" or similar
+    for row in soup.select('tr.courseRow, tr[class*="course"], .gradeRow'):
+        try:
+            cells = row.find_all('td')
+            if len(cells) < 2:
+                continue
+            name = cells[0].get_text(strip=True)
+            grade_text = cells[-1].get_text(strip=True).replace('%', '').strip()
+            pct = float(grade_text)
+            courses.append({'name': name, 'grade': pct, 'letter': None, 'term': '', 'source': 'ic'})
+        except (ValueError, IndexError):
+            continue
+
+    return courses
+
+
+# ── Background sync ────────────────────────────────────────────────────────────
+def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str, token: str = None):
+    """Re-auth and refresh IC grades for a single user. Returns grades list on success, None on failure."""
+    try:
+        password = decrypt_val(encrypted_pw)
+        grades = playwright_ic_sync(ic_username, password, ic_domain)
+        db = user_db(token) if token else (_admin or supabase)
+        db.table('users').update({
+            'ic_grades_cache': grades,
+            'ic_synced_at': datetime.now(timezone.utc).isoformat(),
+        }).eq('id', uid).execute()
+        log.info(f'IC sync OK for user {uid[:8]}… ({len(grades)} courses)')
+        send_grade_email(uid, len(grades))
+        return grades
+    except Exception as e:
+        log.warning(f'IC sync failed for user {uid[:8]}…: {e}')
+        return None
+
+
+_sync_running = False
+
+def sync_all_ic_users():
+    """Scheduled job — runs every 20 minutes, refreshes grades for all IC-connected users."""
+    global _sync_running
+    if _sync_running:
+        log.info('IC sync job: previous run still in progress, skipping')
+        return
+    if not _admin:
+        log.warning('IC sync job: SUPABASE_SERVICE_KEY not set, skipping')
+        return
+    _sync_running = True
+    try:
+        rows = (
+            _admin.table('users')
+            .select('id, ic_domain, ic_username, ic_password')
+            .not_.is_('ic_domain', 'null')
+            .not_.is_('ic_password', 'null')
+            .execute()
+            .data
+        )
+        log.info(f'IC sync job: {len(rows)} users to refresh')
+        for row in rows:
+            sync_user_ic(row['id'], row['ic_domain'], row['ic_username'], row['ic_password'])
+            time.sleep(8)  # let Chromium fully exit before next user
+    except Exception as e:
+        log.error(f'IC sync job error: {e}')
+    finally:
+        _sync_running = False
+
+
+scheduler = BackgroundScheduler(daemon=True)
+scheduler.add_job(sync_all_ic_users, 'interval', minutes=3, id='ic_sync', replace_existing=True)
+scheduler.start()
+atexit.register(lambda: scheduler.shutdown(wait=False))
+
+
+# ── Email notifications ────────────────────────────────────────────────────────
+def send_grade_email(uid: str, course_count: int):
+    """Email the user after a successful IC sync. No-ops if Resend isn't configured."""
+    if not (_resend_available and RESEND_API_KEY and _admin):
+        return
+    try:
+        user = _admin.auth.admin.get_user_by_id(uid)
+        email = user.user.email if user and user.user else None
+        if not email:
+            return
+        _resend.Emails.send({
+            'from': 'onboarding@resend.dev',
+            'to': email,
+            'subject': 'Slate — Grades Updated',
+            'html': (
+                f'<p>Your grades were just synced.</p>'
+                f'<p><strong>{course_count} courses</strong> updated.</p>'
+                f'<p><a href="https://slatet.onrender.com">Open Slate</a></p>'
+            ),
+        })
+    except Exception as e:
+        log.warning(f'Email failed for {uid[:8]}…: {e}')
+
+
+# ── IC API endpoints ───────────────────────────────────────────────────────────
+@app.route('/api/connect_ic', methods=['POST'])
+def connect_ic():
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.replace('Bearer ', '').strip()
+    data = request.json or {}
+
+    ic_domain  = data.get('ic_domain', '').replace('https://', '').replace('http://', '').rstrip('/')
+    username   = data.get('username', '').strip()
+    password   = data.get('password', '').strip()
+
+    if not ic_domain or not username or not password:
+        return jsonify({'error': 'IC domain, NCEDCloud username, and password are required.'}), 400
+
+    try:
+        uid = get_uid(auth_header)
+    except Exception:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    # Validate credentials + get initial grade snapshot
+    try:
+        grades = playwright_ic_sync(username, password, ic_domain)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except RuntimeError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {e}'}), 500
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    user_db(token).table('users').update({
+        'ic_domain':       ic_domain,
+        'ic_username':     username,
+        'ic_password':     encrypt_val(password),
+        'ic_enabled':      True,
+        'ic_grades_cache': grades,
+        'ic_synced_at':    now_iso,
+    }).eq('id', uid).execute()
+
+    return jsonify({'ok': True, 'grades': grades, 'synced_at': now_iso, 'course_count': len(grades)})
+
+
+@app.route('/api/disconnect_ic', methods=['POST'])
+def disconnect_ic():
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.replace('Bearer ', '').strip()
+    try:
+        uid = get_uid(auth_header)
+    except Exception:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    user_db(token).table('users').update({
+        'ic_domain':       None,
+        'ic_username':     None,
+        'ic_password':     None,
+        'ic_enabled':      False,
+        'ic_grades_cache': None,
+        'ic_synced_at':    None,
+    }).eq('id', uid).execute()
+
+    return jsonify({'ok': True})
+
+
+@app.route('/api/toggle_ic', methods=['POST'])
+def toggle_ic():
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.replace('Bearer ', '').strip()
+    data = request.json or {}
+    enabled = bool(data.get('enabled', False))
+
+    try:
+        uid = get_uid(auth_header)
+    except Exception:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    user_db(token).table('users').update({'ic_enabled': enabled}).eq('id', uid).execute()
+    return jsonify({'ok': True, 'enabled': enabled})
+
+
+@app.route('/api/sync_ic', methods=['POST'])
+def sync_ic_now():
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.replace('Bearer ', '').strip()
+    try:
+        uid = get_uid(auth_header)
+    except Exception:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if _sync_running:
+        return jsonify({'error': 'Sync already in progress — try again in a moment.'}), 429
+
+    res = user_db(token).table('users').select('ic_domain, ic_username, ic_password').eq('id', uid).execute()
+    if not res.data or not res.data[0].get('ic_domain') or not res.data[0].get('ic_password'):
+        return jsonify({'error': 'reconnect', 'message': 'IC credentials missing — re-enter them in Settings.'}), 400
+    row = res.data[0]
+
+    # Verify the stored password can actually be decrypted (CREDENTIAL_KEY may have changed on restart)
+    try:
+        decrypt_val(row['ic_password'])
+    except Exception:
+        return jsonify({'error': 'reconnect', 'message': 'Stored IC credentials are invalid (server key changed). Re-enter your password in Settings.'}), 400
+
+    grades = sync_user_ic(uid, row['ic_domain'], row['ic_username'], row['ic_password'], token=token)
+    if grades is None:
+        return jsonify({'error': 'Sync failed — check credentials or IC domain'}), 400
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    return jsonify({'ok': True, 'grades': grades, 'synced_at': now_iso})
+
+
+@app.route('/api/ic_status', methods=['GET'])
+def ic_status():
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.replace('Bearer ', '').strip()
+    try:
+        uid = get_uid(auth_header)
+    except Exception:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    res = (
+        user_db(token).table('users')
+        .select('ic_domain, ic_enabled, ic_grades_cache, ic_synced_at')
+        .eq('id', uid)
+        .execute()
+    )
+
+    if not res.data:
+        return jsonify({'connected': False, 'enabled': False})
+
+    row = res.data[0]
+    connected = bool(row.get('ic_domain'))
+
+    return jsonify({
+        'connected':  connected,
+        'enabled':    bool(row.get('ic_enabled')) and connected,
+        'domain':     row.get('ic_domain'),
+        'grades':     row.get('ic_grades_cache') or [],
+        'synced_at':  row.get('ic_synced_at'),
+    })
+
+
+# ── Existing Canvas auth ───────────────────────────────────────────────────────
+@app.route("/api/signup", methods=["POST"])
+def signup():
+    data = request.json
+    try:
+        res = _auth.auth.sign_up({"email": data["email"], "password": data["password"]})
+        return jsonify({"ok": True, "user": res.user.id})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/login_user", methods=["POST"])
+def login_user():
+    data = request.json
+    try:
+        res = _auth.auth.sign_in_with_password({"email": data["email"], "password": data["password"]})
+        return jsonify({"ok": True, "token": res.session.access_token, "refresh_token": res.session.refresh_token})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/refresh_token", methods=["POST"])
+def refresh_token():
+    data = request.json or {}
+    rt = data.get("refresh_token", "")
+    if not rt:
+        return jsonify({"error": "missing refresh_token"}), 400
+    try:
+        res = _auth.auth.refresh_session(rt)
+        return jsonify({"ok": True, "token": res.session.access_token, "refresh_token": res.session.refresh_token})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
+
+
+@app.route("/api/save_canvas", methods=["POST"])
+def save_canvas():
+    data = request.json
+    auth_token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    try:
+        user = _auth.auth.get_user(auth_token)
+        uid  = user.user.id
+        user_db(auth_token).table("users").upsert({
+            "id":            uid,
+            "email":         user.user.email,
+            "canvas_domain": data["domain"],
+            "canvas_token":  data["token"],
+        }).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/load_canvas", methods=["GET"])
+def load_canvas():
+    auth_token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    try:
+        user = _auth.auth.get_user(auth_token)
+        uid  = user.user.id
+        res  = user_db(auth_token).table("users").select("canvas_domain, canvas_token").eq("id", uid).execute()
+        return jsonify(res.data[0] if res.data else {})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+# ── Canvas helpers ─────────────────────────────────────────────────────────────
+def canvas_get(domain, token, endpoint, params={}):
+    results = []
+    url     = f"https://{domain}/api/v1{endpoint}"
+    headers = {"Authorization": f"Bearer {token}"}
+    log.info(f'Canvas GET {endpoint} domain={domain}')
+    while url:
+        r = requests.get(url, headers=headers, params=params, timeout=20)
+        log.info(f'Canvas GET {endpoint} → {r.status_code}')
+        r.raise_for_status()
+        data = r.json()
+        if isinstance(data, list):
+            results.extend(data)
+        else:
+            return data
+        url    = r.links.get("next", {}).get("url")
+        params = {}
+    return results
+
+
+def get_quarter():
+    now = datetime.now(timezone.utc)
+    q_ranges = {
+        'Q1': ('2025-08-25', '2025-10-17'),
+        'Q2': ('2025-10-20', '2026-01-16'),
+        'Q3': ('2026-01-20', '2026-03-20'),
+        'Q4': ('2026-03-23', '2026-06-12'),
     }
-  });
-  return totalUsedWeight > 0 ? Math.round(weightedSum / totalUsedWeight) : null;
-}
+    for q, (s, e) in q_ranges.items():
+        start = datetime.fromisoformat(s).replace(tzinfo=timezone.utc)
+        end   = datetime.fromisoformat(e).replace(tzinfo=timezone.utc)
+        if start <= now <= end:
+            return q
+    return 'all'
 
-function updatePrediction() {
-  const course = window._drawerCourse;
-  if (!course) return;
-  const catsByTerm = course.categories_by_term || {};
-  const term = (gqf !== 'all' && catsByTerm[gqf]) ? gqf
-             : ['Q4','Q3','Q2','Q1','Final'].find(t => catsByTerm[t]?.length) || null;
-  const cats = term ? (catsByTerm[term] || []) : [];
-  if (!cats.length) return;
 
-  const hypotheticals = [];
-  document.querySelectorAll('.predict-slider').forEach((slider, i) => {
-    const score = parseInt(slider.value);
-    document.getElementById('ps-' + i).textContent = score + '%';
-    hypotheticals.push({ cat: slider.dataset.cat, score });
-  });
+def format_assignment(a, course_name, now, group_id=None, group_name=None, group_scores=None):
+    due_raw    = a.get("due_at")
+    due_str    = None
+    hours_until = None
 
-  const predicted = predictGrade(cats, hypotheticals);
-  const el = document.getElementById('predictResult');
-  if (el && predicted !== null) {
-    el.textContent   = predicted + '%';
-    el.style.color   = gradeColor(predicted);
-  }
-}
+    if due_raw:
+        due_dt      = datetime.fromisoformat(due_raw.replace("Z", "+00:00"))
+        due_str     = due_dt.strftime("%b %d, %I:%M %p")
+        hours_until = (due_dt - now).total_seconds() / 3600
 
-function gradeColor(p) {
-  if (p >= 90) return 'var(--green)';
-  if (p >= 80) return 'var(--blue)';
-  if (p >= 70) return 'var(--orange)';
-  return 'var(--red)';
-}
+    pts          = a.get("points_possible")
+    grade_impact = None
 
-function updateAssignPrediction(slider) {
-  const courseName = slider.dataset.course;
-  const catName    = slider.dataset.cat;
-  const score      = parseInt(slider.value);
-  const scoreEl    = slider.parentElement.querySelector('.ap-score');
-  const resultEl   = slider.parentElement.parentElement.querySelector('.ap-result');
-  if (scoreEl) scoreEl.textContent = score + '%';
+    if pts and group_id and group_scores and group_id in group_scores:
+        g      = group_scores[group_id]
+        weight = g["weight"] / 100
+        if g["possible"] > 0:
+            other = sum(
+                (gs["earned"] / gs["possible"]) * (gs["weight"] / 100)
+                for gid2, gs in group_scores.items()
+                if gid2 != group_id and gs["possible"] > 0
+            )
+            cur    = (other + (g["earned"] / g["possible"]) * weight) * 100
+            submit = (other + ((g["earned"] + pts) / (g["possible"] + pts)) * weight) * 100
+            skip   = (other + (g["earned"] / (g["possible"] + pts)) * weight) * 100
+            grade_impact = {
+                "current":      round(cur, 1),
+                "if_submitted": round(submit, 1),
+                "if_missing":   round(skip, 1),
+                "swing":        round(submit - skip, 1),
+            }
 
-  // Find course — prefer matching term, fall back to any with categories loaded
-  const allMatches = (_ic.grades || []).filter(c => c.name === courseName);
-  const course = allMatches.find(c => c.term === gqf)
-              || allMatches.find(c => c.categories_by_term && Object.keys(c.categories_by_term).length > 0)
-              || allMatches[0];
-  if (!course) return;
-  const catsByTerm = course.categories_by_term || {};
-  const termKeys   = Object.keys(catsByTerm);
-  const term = (gqf !== 'all' && catsByTerm[gqf] && catsByTerm[gqf].length) ? gqf
-             : ['Q4','Q3','Q2','Q1','Final'].find(t => catsByTerm[t] && catsByTerm[t].length)
-             || termKeys[0] || null;
-  const cats = term ? (catsByTerm[term] || []) : [];
-
-  if (resultEl) {
-    if (!cats.length) {
-      resultEl.textContent = '— reload page after sync';
-      resultEl.style.color = 'var(--text3)';
-      return;
-    }
-    const predicted = predictGrade(cats, [{ cat: catName, score }]);
-    if (predicted !== null) {
-      resultEl.textContent = `→ ${predicted}% course grade`;
-      resultEl.style.color = gradeColor(predicted);
-    } else {
-      resultEl.textContent = '— category not matched';
-      resultEl.style.color = 'var(--text3)';
-    }
-  }
-}
-
-function gradeLetter(p) {
-  if (p >= 93) return 'A';  if (p >= 90) return 'A-';
-  if (p >= 87) return 'B+'; if (p >= 83) return 'B';
-  if (p >= 80) return 'B-'; if (p >= 77) return 'C+';
-  if (p >= 73) return 'C';  return 'D';
-}
-
-function greeting() {
-  const h = new Date().getHours();
-  return h < 12 ? 'Good morning.' : h < 17 ? 'Good afternoon.' : 'Good evening.';
-}
-
-function buildDesc(missing, soon) {
-  if (missing > 0 && soon > 0) return `You have ${missing} missing assignment${missing>1?'s':''} and ${soon} due within 48 hours.`;
-  if (missing > 0) return `You have ${missing} missing assignment${missing>1?'s':''}. Get those in as soon as possible.`;
-  if (soon > 0)    return `${soon} assignment${soon>1?' are':' is'} due within 48 hours. Stay on top of it.`;
-  return 'No urgent items right now. Stay ahead of your upcoming work.';
-}
-
-function timeAgo(isoStr) {
-  const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
-  if (diff < 60)    return 'Just now';
-  if (diff < 3600)  return Math.floor(diff / 60) + ' min ago';
-  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-  return Math.floor(diff / 86400) + 'd ago';
-}
-
-function countUp(el, target, duration) {
-  if (!target || isNaN(target)) { el.textContent = target ?? '—'; return; }
-  const start = performance.now();
-  (function frame(now) {
-    const t = Math.min((now - start) / duration, 1);
-    el.textContent = Math.round((1 - Math.pow(1 - t, 3)) * target);
-    if (t < 1) requestAnimationFrame(frame);
-  })(performance.now());
-}
-
-function animateSidebar() {
-  document.querySelectorAll('.nav-label, .nav-item')
-    .forEach((el, i) => setTimeout(() => el.classList.add('nav-in'), i * 50));
-}
-function resetSidebar() {
-  document.querySelectorAll('.nav-label, .nav-item').forEach(el => el.classList.remove('nav-in'));
-}
-
-/* ── IC integration ──────────────────────────────────── */
-async function loadICStatus() {
-  if (!userToken) return;
-  try {
-    const res  = await fetch('/api/ic_status', { headers: { 'Authorization': 'Bearer ' + userToken } });
-    const data = await res.json();
-    _ic = { connected: data.connected, enabled: data.enabled, domain: data.domain, grades: data.grades || [], synced_at: data.synced_at };
-    _applyICStatus();
-  } catch (e) { /* IC is optional — silent fail */ }
-}
-
-function _applyICStatus() {
-  const { connected, enabled, domain, synced_at } = _ic;
-
-  // Toggle state
-  const tog = document.getElementById('icGradesToggle');
-  if (tog) {
-    tog.classList.toggle('on', enabled);
-    tog.classList.toggle('disabled', !connected);
-  }
-
-  // Form vs connected display
-  const form  = document.getElementById('icConnectForm');
-  const state = document.getElementById('icConnectedState');
-  if (form && state) {
-    form.style.display  = connected ? 'none'  : 'block';
-    state.style.display = connected ? 'block' : 'none';
-  }
-
-  // Detail fields
-  const domEl  = document.getElementById('icDomainDisplay');
-  const syncEl = document.getElementById('icSyncedDisplay');
-  if (domEl)  domEl.textContent  = domain    || '—';
-  if (syncEl) syncEl.textContent = synced_at ? timeAgo(synced_at) : '—';
-}
-
-async function connectIC() {
-  const username  = document.getElementById('icUsername').value.trim();
-  const password  = document.getElementById('icPassword').value.trim();
-  const ic_domain = document.getElementById('icDomain').value.trim()
-    .replace(/^https?:\/\//,'').replace(/\/$/,'');
-  const status = document.getElementById('icConnectStatus');
-  const btn    = document.getElementById('icConnectBtn');
-
-  if (!username || !password || !ic_domain) {
-    status.className = 'error';
-    status.textContent = 'All three fields are required.';
-    return;
-  }
-
-  btn.disabled = true;
-  status.className = 'loading';
-  status.innerHTML = '<span class="spinner"></span>Authenticating via NCEDCloud…';
-
-  try {
-    const res  = await fetch('/api/connect_ic', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + userToken },
-      body: JSON.stringify({ username, password, ic_domain }),
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-      status.className = 'error';
-      status.textContent = data.error || 'Connection failed.';
-      btn.disabled = false;
-      return;
+    return {
+        "id":           a["id"],
+        "name":         a["name"],
+        "course":       course_name,
+        "group":        group_name,
+        "due":          due_str,
+        "due_raw":      due_raw,
+        "points":       pts,
+        "missing":      a.get("is_missing_submission", False),
+        "due_soon":     hours_until is not None and 0 < hours_until <= 48,
+        "url":          a.get("html_url", ""),
+        "grade_impact": grade_impact,
     }
 
-    status.className = 'ok';
-    status.textContent = `Connected — ${data.course_count} course${data.course_count !== 1 ? 's' : ''} found.`;
 
-    _ic = { connected: true, enabled: true, domain: ic_domain, grades: data.grades || [], synced_at: data.synced_at };
-    _applyICStatus();
-    renderGrades(window._courses || []);
-  } catch (e) {
-    status.className = 'error';
-    status.textContent = 'Could not reach backend.';
-    btn.disabled = false;
-  }
-}
-
-async function syncICNow(silent = false) {
-  const btn = document.getElementById('icSyncBtn');
-  const st  = document.getElementById('icSyncStatus');
-  if (!silent) { btn.disabled = true; st.style.color = 'var(--blue)'; st.textContent = 'Syncing…'; }
-  try {
-    const res  = await fetch('/api/sync_ic', { method: 'POST', headers: { 'Authorization': 'Bearer ' + userToken } });
-    const data = await res.json();
-    if (!res.ok) {
-      if (silent) return; // background auto-sync: never wipe IC state on failure
-      if (data.error === 'reconnect') {
-        st.style.color = 'var(--red)';
-        st.textContent = data.message || 'Re-enter IC credentials.';
-        const settingsNav = document.querySelector('[data-page="settings"]');
-        if (settingsNav) showPage('settings', settingsNav);
-        _ic.connected = false;
-        _applyICStatus();
-        const csEl = document.getElementById('icConnectStatus');
-        if (csEl) { csEl.style.color = 'var(--red)'; csEl.textContent = data.message || 'Please re-enter your IC password.'; }
-      } else {
-        st.style.color = 'var(--red)'; st.textContent = data.error || 'Sync failed.';
-      }
-      btn.disabled = false; return;
-    }
-    _ic.grades    = data.grades || [];
-    _ic.synced_at = data.synced_at;
-    if (!silent) {
-      st.style.color = 'var(--green)';
-      st.textContent = `Done — ${_ic.grades.length} course${_ic.grades.length !== 1 ? 's' : ''}`;
-      const syncEl = document.getElementById('icSyncedDisplay');
-      if (syncEl) syncEl.textContent = 'Just now';
-    }
-    all = []; _fillAssignmentsFromIC();
-    renderGrades(window._courses || []);
-    renderAssign(); renderDash();
-  } catch (e) {
-    if (silent) return;
-    st.style.color = 'var(--orange)'; st.textContent = 'Sync running in background — reload in 2 min.';
-    await loadICStatus();
-    renderGrades(window._courses || []);
-  }
-  if (!silent) btn.disabled = false;
-}
-
-async function disconnectIC() {
-  try {
-    await fetch('/api/disconnect_ic', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + userToken },
-    });
-  } catch (e) { /* silent */ }
-
-  _ic = { connected: false, enabled: false, domain: null, grades: [], synced_at: null };
-  _applyICStatus();
-  renderGrades(window._courses || []);
-}
-
-async function toggleICGrades() {
-  if (!_ic.connected) return;
-  _ic.enabled = !_ic.enabled;
-
-  const tog = document.getElementById('icGradesToggle');
-  if (tog) tog.classList.toggle('on', _ic.enabled);
-
-  try {
-    await fetch('/api/toggle_ic', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + userToken },
-      body: JSON.stringify({ enabled: _ic.enabled }),
-    });
-  } catch (e) { /* silent */ }
-
-  renderGrades(window._courses || []);
-}
-
-/* ── Auth ───────────────────────────────────────────── */
-let _canvas = { connected: false, domain: null };
-
-async function authLogin() {
-  const email = document.getElementById('email').value.trim();
-  const pass  = document.getElementById('password').value.trim();
-  const st    = document.getElementById('authStatus');
-  st.className = 'loading'; st.innerHTML = '<span class="spinner"></span>Signing in…';
-  const res  = await fetch('/api/login_user', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) });
-  const data = await res.json();
-  if (!res.ok) { st.className='error'; st.textContent=data.error; return; }
-  userToken = data.token;
-  if (data.refresh_token) localStorage.setItem('slate_rt', data.refresh_token);
-  await enterApp();
-}
-
-async function authSignup() {
-  const email = document.getElementById('email').value.trim();
-  const pass  = document.getElementById('password').value.trim();
-  const st    = document.getElementById('authStatus');
-  st.className = 'loading'; st.innerHTML = '<span class="spinner"></span>Creating account…';
-  const res  = await fetch('/api/signup', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) });
-  const data = await res.json();
-  if (!res.ok) { st.className='error'; st.textContent=data.error; return; }
-  st.className='ok'; st.textContent='Account created. Check your email, then sign in.';
-}
-
-async function enterApp() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('app').style.display         = 'block';
-  const dash    = document.getElementById('page-dashboard');
-  const dashNav = document.querySelector('[data-page="dashboard"]');
-  dash.classList.add('active');
-  if (dashNav) dashNav.classList.add('active');
-  animateSidebar();
-  await loadICStatus();
-  renderGrades(window._courses || []);
-  _fillAssignmentsFromIC();
-  renderAssign();
-  renderDash();
-  initCalendar();
-  loadSavedCanvas(); // silent background — does not block app entry
-  if (_ic.connected) syncICNow(true); // auto-sync on login, silent — never clobber IC state on failure
-}
-
-async function loadSavedCanvas() {
-  try {
-    const res  = await fetch('/api/load_canvas', { headers:{'Authorization':'Bearer '+userToken} });
-    const data = await res.json();
-    if (data.canvas_domain && data.canvas_token) {
-      await _applyCanvasCreds(data.canvas_domain, data.canvas_token, false);
-    }
-  } catch(e) { /* silent */ }
-}
-
-async function connectCanvas() {
-  const domain = document.getElementById('cvDomain').value.trim().replace('https://','').replace(/\/$/,'');
-  const token  = document.getElementById('cvToken').value.trim();
-  const btn    = document.getElementById('canvasConnectBtn');
-  const status = document.getElementById('canvasConnectStatus');
-  if (!domain || !token) { status.className='error'; status.textContent='Both fields are required.'; return; }
-  btn.disabled = true;
-  status.className = 'loading'; status.innerHTML = '<span class="spinner"></span>Connecting…';
-  const ok = await _applyCanvasCreds(domain, token, true);
-  if (ok) { status.className='ok'; status.textContent='Connected!'; }
-  else    { status.className='error'; status.textContent='Connection failed — check your domain and token.'; }
-  btn.disabled = false;
-}
-
-async function _applyCanvasCreds(domain, token, save) {
-  try {
-    const res  = await fetch('/api/assignments', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({domain,token}) });
-    const data = await res.json();
-    if (!res.ok) return false;
-    all = data.assignments.map(a => ({...a, quarter: getQ(a.due_raw)}));
-    _canvas = { connected: true, domain };
-    if (save && userToken) {
-      await fetch('/api/save_canvas', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+userToken}, body:JSON.stringify({domain,token}) });
-    }
-    document.getElementById('settingsDomain').textContent         = domain;
-    document.getElementById('canvasConnectForm').style.display    = 'none';
-    document.getElementById('canvasConnectedState').style.display = 'block';
-    renderAssign();
-    renderDash();
-    renderGrades(data.courses || []);
-    return true;
-  } catch(e) { return false; }
-}
-
-async function disconnectCanvas() {
-  all = []; _canvas = { connected: false, domain: null }; window._courses = [];
-  if (userToken) {
-    await fetch('/api/save_canvas', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+userToken}, body:JSON.stringify({domain:'',token:''}) });
-  }
-  document.getElementById('canvasConnectForm').style.display    = 'block';
-  document.getElementById('canvasConnectedState').style.display = 'none';
-  document.getElementById('cvDomain').value = '';
-  document.getElementById('cvToken').value  = '';
-  renderAssign(); renderDash(); renderGrades([]);
-}
-
-function logout() {
-  all = []; calSelectedDay = null;
-  _ic     = { connected:false, enabled:false, domain:null, grades:[], synced_at:null };
-  _canvas = { connected:false, domain:null };
-  window._courses = [];
-  document.getElementById('app').style.display         = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('authStep').style.display    = 'block';
-  document.getElementById('authStatus').textContent    = '';
-  document.getElementById('email').value    = '';
-  document.getElementById('password').value = '';
-  document.getElementById('icUsername').value = '';
-  document.getElementById('icPassword').value = '';
-  document.getElementById('icDomain').value   = '';
-  document.getElementById('icConnectStatus').textContent = '';
-  document.getElementById('icConnectBtn').disabled = false;
-  document.getElementById('canvasConnectForm').style.display    = 'block';
-  document.getElementById('canvasConnectedState').style.display = 'none';
-  document.getElementById('cvDomain').value = '';
-  document.getElementById('cvToken').value  = '';
-  userToken = null;
-  localStorage.removeItem('slate_rt');
-  _applyICStatus();
-  resetSidebar();
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active','page-anim'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-}
-
-/* ── Render ─────────────────────────────────────────── */
-function buildTrendline(courseName) {
-  const termOrder = ['Q1','Q2','Q3','Q4'];
-  const map = {};
-  (_ic.grades || []).forEach(c => { if (c.name === courseName) map[c.term] = c.grade; });
-  const data = termOrder.map(t => map[t] != null ? Math.round(map[t]) : null).filter(v => v != null);
-  if (data.length < 2) return '';
-  const W = 64, H = 22, pad = 3;
-  const lo = Math.min(...data) - 3, hi = Math.max(...data) + 3, rng = hi - lo || 1;
-  const x = i => pad + i * (W - pad*2) / (data.length - 1);
-  const y = v => H - pad - ((v - lo) / rng) * (H - pad*2);
-  const pts = data.map((v,i) => `${x(i)},${y(v)}`).join(' ');
-  const col = gradeColor(data[data.length-1]);
-  return `<svg class="grade-trend" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
-    <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="${x(data.length-1)}" cy="${y(data[data.length-1])}" r="2.5" fill="${col}"/>
-  </svg>`;
-}
-
-function renderDash() {
-  const missing  = all.filter(a=>a.missing).length;
-  const soon     = all.filter(a=>a.due_soon&&!a.missing).length;
-  const upcoming = all.filter(a=>!a.missing&&!a.due_soon).length;
-  document.getElementById('dashGreeting').textContent = greeting();
-  document.getElementById('dashDesc').textContent     = buildDesc(missing, soon);
-  document.getElementById('streakNum').textContent    = '0';
-  countUp(document.getElementById('sUpcoming'), upcoming, 420);
-  countUp(document.getElementById('sSoon'),     soon,     420);
-  countUp(document.getElementById('sMissing'),  missing,  420);
-  countUp(document.getElementById('sTotal'),    all.length, 480);
-  const priority = [...all.filter(a=>a.missing),...all.filter(a=>a.due_soon&&!a.missing)].slice(0,6);
-  document.getElementById('priorityList').innerHTML = priority.length ? priority.map(assignCard).join('') : '<div class="empty">Nothing urgent right now.</div>';
-}
-
-function _fillAssignmentsFromIC() {
-  if (all.length || !_ic.connected) return;
-  // Only use the most recent term (Q4 > Q3 > Q2 > Q1)
-  const termOrder   = ['Q4','Q3','Q2','Q1','Final'];
-  const currentTerm = termOrder.find(t => (_ic.grades || []).some(c => c.term === t));
-  if (!currentTerm) return;
-  const now = new Date();
-  const pending = [];
-  (_ic.grades || []).filter(c => c.term === currentTerm).forEach(course => {
-    (course.assignments || []).forEach(a => {
-      if (a.score != null && a.score !== 0 && !a.missing) return; // already graded; 0 = missing
-      const dueDate    = a.due ? new Date(a.due) : null;
-      const hoursUntil = dueDate ? (dueDate - now) / 3600000 : null;
-      pending.push({
-        id:           `ic_${course.section_id}_${a.name}`,
-        name:         a.name,
-        course:       course.name,
-        group:        a.category || '',
-        due:          dueDate ? dueDate.toLocaleDateString('en-US', {month:'short', day:'numeric'}) : null,
-        due_raw:      a.due || null,
-        points:       a.max,
-        missing:      a.missing  || false,
-        due_soon:     hoursUntil !== null && hoursUntil > 0 && hoursUntil <= 48,
-        url:          '',
-        grade_impact: null,
-        quarter:      getQ(a.due),
-        _source:      'ic',
-      });
-    });
-  });
-  if (pending.length) {
-    all = pending;
-    sf  = 'all'; // show everything, not just 'upcoming'
-    renderAssign();
-    renderDash();
-  }
-}
-
-function renderAssign() {
-  if (!all.length) {
-    document.getElementById('assignList').innerHTML =
-      `<div class="empty">No assignments loaded.<br>
-       <span style="font-size:12px;color:var(--text3);margin-top:6px;display:block">
-         Connect Canvas in <span style="color:var(--text2);cursor:pointer;text-decoration:underline"
-         onclick="showPage('settings',document.querySelector('[data-page=settings]'))">Settings</span> to see upcoming assignments.
-       </span></div>`;
-    return;
-  }
-  let list = all;
-  if (qf !== 'all')           list = list.filter(a=>a.quarter===qf);
-  if (sf === 'missing')       list = list.filter(a=>a.missing);
-  else if (sf === 'soon')     list = list.filter(a=>a.due_soon&&!a.missing);
-  else if (sf === 'upcoming') list = list.filter(a=>!a.missing&&!a.due_soon);
-  if (hideNDD) list = list.filter(a=>a.due);
-  document.getElementById('assignList').innerHTML = list.length ? list.map(assignCard).join('') : '<div class="empty">Nothing here.</div>';
-}
-
-function assignCard(a) {
-  const bar   = a.missing ? 'bar-missing' : a.due_soon ? 'bar-soon' : 'bar-upcoming';
-  const badge = a.missing  ? '<span class="assign-badge badge-missing">Missing</span>'
-              : a.due_soon ? '<span class="assign-badge badge-soon">Due soon</span>' : '';
-  const impact = a.grade_impact
-    ? `<div class="grade-impact">
-        <span class="gi-now">Now ${a.grade_impact.current}%</span>
-        <span class="gi-sep">·</span>
-        <span class="gi-submit">Submit → ${a.grade_impact.if_submitted}%</span>
-        <span class="gi-sep">·</span>
-        <span class="gi-miss">Skip → ${a.grade_impact.if_missing}%</span>
-        <span class="gi-sep">·</span>
-        <span class="gi-swing">${a.grade_impact.swing}% swing</span>
-      </div>` : '';
-  const showPredictor = a._source === 'ic' && a.score == null && a.group;
-  const predictor = showPredictor
-    ? `<div class="ap-wrap" onmousedown="event.stopPropagation()" ondragstart="event.preventDefault()" onclick="event.stopPropagation();event.preventDefault()">
-        <div class="ap-row">
-          <span class="ap-label">Predict</span>
-          <input type="range" class="ap-slider" min="0" max="100" value="85"
-            data-course="${a.course.replace(/"/g,'&quot;')}"
-            data-cat="${(a.group||'').replace(/"/g,'&quot;')}"
-            oninput="updateAssignPrediction(this)">
-          <span class="ap-score">85%</span>
-        </div>
-        <span class="ap-result"></span>
-      </div>` : '';
-  return `<a class="assign-card" href="${a.url||'#'}" target="_blank" rel="noopener" draggable="false">
-    <div class="assign-bar ${bar}"></div>
-    <div style="min-width:0;flex:1">
-      <div class="assign-name">${a.name}</div>
-      <div class="assign-course">${a.course}</div>
-      ${badge}${impact}${predictor}
-    </div>
-    <div class="assign-meta">
-      <div class="assign-due">${a.due||'No due date'}</div>
-      <div class="assign-pts">${a.points!=null?a.points+' pts':''}</div>
-    </div>
-  </a>`;
-}
-
-function renderGrades(courseList) {
-  window._courses = courseList;
-
-  const useIC = _ic.connected && _ic.enabled && _ic.grades.length > 0;
-
-  // Banners
-  const icBanner     = document.getElementById('icGradeBanner');
-  const canvasBanner = document.getElementById('canvasGradeBanner');
-  // Quarter filter bar — hide when showing IC (IC has no quarter data)
-  const filterBar    = document.getElementById('gradeFilterBar');
-
-  if (icBanner)     icBanner.style.display     = useIC ? 'flex' : 'none';
-  if (canvasBanner) canvasBanner.style.display  = (!useIC && _ic.connected) ? 'flex' : 'none';
-  if (filterBar)    filterBar.style.display     = 'flex';
-
-  if (useIC) {
-    // Sync time in banner
-    const syncEl = document.getElementById('icGradeSyncTime');
-    if (syncEl && _ic.synced_at) syncEl.textContent = timeAgo(_ic.synced_at);
-
-    // Auto-select current quarter on first IC load
-    if (gqf === 'all') {
-      const termOrder = ['Q4','Q3','Q2','Q1'];
-      const activeTerm = termOrder.find(q => _ic.grades.some(c => c.term === q));
-      if (activeTerm) setGQF(activeTerm);
-    }
-
-    // Show/hide Final button based on whether IC has Final term data
-    const finalBtn = document.getElementById('gqf-Final');
-    if (finalBtn) finalBtn.style.display = _ic.grades.some(c => c.term === 'Final') ? '' : 'none';
-
-    const icFiltered = gqf === 'all' ? _ic.grades : _ic.grades.filter(c => c.term === gqf);
-    window._icFiltered = icFiltered;
-
-    // GPA strip
-    const gpaStrip = document.getElementById('gpaStrip');
-    if (gpaStrip) {
-      const gpa = computeGPA(icFiltered);
-      if (gpa.weighted !== null) {
-        document.getElementById('gpaWeighted').textContent   = gpa.weighted;
-        document.getElementById('gpaUnweighted').textContent = gpa.unweighted;
-        gpaStrip.style.display = 'flex';
-      } else {
-        gpaStrip.style.display = 'none';
-      }
-    }
-
-    document.getElementById('gradeGrid').innerHTML = icFiltered.map(c => {
-      const pct    = Math.round(c.grade);
-      const col    = gradeColor(pct);
-      const letter = c.letter || gradeLetter(pct);
-      return `<div class="grade-card">
-        <div class="grade-source ic">IC</div>
-        <div class="grade-name">${c.name}</div>
-        <div class="grade-pct" style="color:${col}">${pct}<span style="font-size:13px;color:var(--text3);font-weight:400">%</span></div>
-        <div class="grade-letter" style="color:${col}">${letter}</div>
-        <div class="grade-bar-track"><div class="grade-bar-fill" data-w="${pct}" style="background:${col}"></div></div>
-        ${buildTrendline(c.name)}
-      </div>`;
-    }).join('');
-
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      document.querySelectorAll('.grade-bar-fill').forEach(b=>{ b.style.width=b.dataset.w+'%'; });
-      _bindGradeCardClicks();
-    }));
-    return;
-  }
-
-  // Canvas grades
-  const gpaStripEl = document.getElementById('gpaStrip');
-  if (gpaStripEl) gpaStripEl.style.display = 'none';
-  let filtered = courseList.filter(c=>c.grade!=null);
-  if (gqf !== 'all') filtered = filtered.filter(c=>c.quarter===gqf);
-  if (!filtered.length) {
-    document.getElementById('gradeGrid').innerHTML = '<div class="empty">Grade data unavailable. Canvas may require additional permissions.</div>';
-    return;
-  }
-  document.getElementById('gradeGrid').innerHTML = filtered.map(c => {
-    const pct = Math.round(c.grade);
-    const col = gradeColor(pct);
-    return `<div class="grade-card">
-      <div class="grade-source canvas">Canvas</div>
-      <div class="grade-name">${c.name}</div>
-      <div class="grade-pct" style="color:${col}">${pct}<span style="font-size:13px;color:var(--text3);font-weight:400">%</span></div>
-      <div class="grade-letter" style="color:${col}">${gradeLetter(pct)}</div>
-      <div class="grade-bar-track"><div class="grade-bar-fill" data-w="${pct}" style="background:${col}"></div></div>
-    </div>`;
-  }).join('');
-
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    document.querySelectorAll('.grade-bar-fill').forEach(b=>{ b.style.width=b.dataset.w+'%'; });
-  }));
-}
-
-/* ── Calendar ────────────────────────────────────────── */
-function dateKey(d) {
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function initCalendar() {
-  const now = new Date();
-  calYear = now.getFullYear(); calMonth = now.getMonth(); calSelectedDay = null;
-  renderCalendar();
-}
-function buildDayMap() {
-  const map = {};
-  all.forEach(a => {
-    if (!a.due_raw) return;
-    const k = dateKey(new Date(a.due_raw));
-    (map[k] = map[k] || []).push(a);
-  });
-  return map;
-}
-function renderCalendar() {
-  document.getElementById('calMonthLabel').textContent = MONTHS[calMonth]+' '+calYear;
-  const firstDay = new Date(calYear,calMonth,1).getDay();
-  const days     = new Date(calYear,calMonth+1,0).getDate();
-  const todayKey = dateKey(new Date());
-  const byDay    = buildDayMap();
-  let html = '';
-  for (let i=0;i<firstDay;i++) html += '<div class="cal-day cal-day--empty"></div>';
-  for (let d=1;d<=days;d++) {
-    const k = calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    const assigns = byDay[k]||[];
-    const cls = ['cal-day', assigns.length?'cal-day--has':'', k===todayKey?'cal-day--today':'', k===calSelectedDay?'cal-day--selected':''].filter(Boolean).join(' ');
-    let dots = '';
-    if (assigns.some(a=>a.missing))              dots += '<span class="cal-dot dot-red"></span>';
-    if (assigns.some(a=>a.due_soon&&!a.missing)) dots += '<span class="cal-dot dot-orange"></span>';
-    if (assigns.some(a=>!a.missing&&!a.due_soon)) dots += '<span class="cal-dot dot-blue"></span>';
-    html += `<div class="${cls}" onclick="selectCalDay('${k}')"><span class="cal-day-num">${d}</span><div class="cal-dots">${dots}</div></div>`;
-  }
-  document.getElementById('calGrid').innerHTML = html;
-}
-function selectCalDay(key) {
-  calSelectedDay = key;
-  renderCalendar();
-  const [y,m,d] = key.split('-').map(Number);
-  document.getElementById('calDetailHead').textContent = MONTHS[m-1]+' '+d+', '+y;
-  const assigns = (buildDayMap()[key])||[];
-  const el = document.getElementById('calDetail');
-  el.innerHTML = assigns.length
-    ? '<div class="assign-list">'+assigns.map(assignCard).join('')+'</div>'
-    : '<div class="empty">Nothing due this day.</div>';
-}
-function calPrev() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
-function calNext() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
-
-/* ── Navigation ─────────────────────────────────────── */
-function showPage(page, el) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active','page-anim'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  const target = document.getElementById('page-'+page);
-  target.classList.add('active');
-  requestAnimationFrame(()=>target.classList.add('page-anim'));
-  if (el) el.classList.add('active');
-  if (page === 'calendar') renderCalendar();
-  if (page === 'settings') _applyICStatus(); // refresh sync time on visit
-}
-
-function setSF(f) { sf=f; ['upcoming','soon','missing','all'].forEach(s=>document.getElementById('sf-'+s)?.classList.toggle('active',s===f)); renderAssign(); }
-function setQF(q) { qf=q; ['all','Q1','Q2','Q3','Q4'].forEach(s=>document.getElementById('qf-'+s)?.classList.toggle('active',s===q)); renderAssign(); }
-function setGQF(q) { gqf=q; ['all','Q1','Q2','Q3','Q4','Final'].forEach(s=>document.getElementById('gqf-'+s)?.classList.toggle('active',s===q)); renderGrades(window._courses||[]); }
-function toggleNDD() { hideNDD=!hideNDD; document.getElementById('nddToggle').classList.toggle('on',hideNDD); renderAssign(); }
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeDrawer();
-  if (e.key !== 'Enter') return;
-  if (document.getElementById('loginScreen').style.display !== 'none') login();
-});
+@app.route("/")
+def index():
+    resp = send_from_directory("static", "index.html")
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp
 
 
-(async () => {
-  const rt = localStorage.getItem('slate_rt');
-  if (!rt) return;
-  try {
-    const res  = await fetch('/api/refresh_token', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({refresh_token: rt}) });
-    const data = await res.json();
-    if (!res.ok) { localStorage.removeItem('slate_rt'); return; }
-    userToken = data.token;
-    if (data.refresh_token) localStorage.setItem('slate_rt', data.refresh_token);
-    await enterApp();
-  } catch { localStorage.removeItem('slate_rt'); }
-})();
 
-/* ── Assignment Drawer ───────────────────────────────── */
-let _drawerOpen = false;
 
-function openDrawer(course) {
-  const pct    = Math.round(course.grade);
-  const col    = gradeColor(pct);
-  const letter = course.letter || gradeLetter(pct);
+@app.route("/api/assignments", methods=["POST"])
+def get_assignments():
+    body   = request.json
+    domain = body.get("domain", "").strip().replace("https://", "").replace("/", "")
+    token  = body.get("token", "").strip()
 
-  document.getElementById('drawerTitle').textContent  = course.name;
-  document.getElementById('drawerMeta').textContent   = course.term ? `Term: ${course.term}` : '';
-  document.getElementById('drawerPct').textContent    = pct + '%';
-  document.getElementById('drawerPct').style.color    = col;
-  document.getElementById('drawerLetter').textContent = letter;
-  document.getElementById('drawerLetter').style.color = col;
+    if not domain or not token:
+        return jsonify({"error": "Domain and token required"}), 400
 
-  const overlay = document.getElementById('drawerOverlay');
-  const drawer  = document.getElementById('assignDrawer');
-  overlay.classList.add('open');
-  drawer.classList.add('open');
-  _drawerOpen = true;
+    try:
+        courses = canvas_get(domain, token, "/courses", {
+            "enrollment_state": "active",
+            "include[]":        ["total_scores", "current_grading_period_scores"],
+            "per_page":         50,
+        })
+        courses = [c for c in courses if "name" in c and not c.get("access_restricted_by_date")]
 
-  renderDrawerAssignments(course);
-}
+        assignments = []
+        now         = datetime.now(timezone.utc)
 
-function closeDrawer() {
-  document.getElementById('drawerOverlay').classList.remove('open');
-  document.getElementById('assignDrawer').classList.remove('open');
-  _drawerOpen = false;
-}
+        for course in courses:
+            cid   = course["id"]
+            cname = course["name"]
 
-function renderDrawerAssignments(course) {
-  const body = document.getElementById('drawerBody');
-  window._drawerCourse = course;
+            subs = canvas_get(domain, token, f"/courses/{cid}/students/submissions", {
+                "student_ids[]": "self",
+                "include[]":     "assignment",
+                "per_page":      100,
+            })
 
-  function fmtDate(iso) {
-    if (!iso) return '';
-    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
+            default_weights = {"perform": 50, "rehearse": 30, "prepare": 20}
+            groups = canvas_get(domain, token, f"/courses/{cid}/assignment_groups", {
+                "per_page":  50,
+                "include[]": "assignments",
+            })
 
-  function asgnRow(a) {
-    const hasScore   = a.score !== null && a.score !== undefined;
-    const hasMax     = a.max   !== null && a.max   !== undefined;
-    const pct        = a.pct  != null ? Math.round(parseFloat(a.pct))
-                     : (hasScore && hasMax && parseFloat(a.max) > 0
-                        ? Math.round(parseFloat(a.score) / parseFloat(a.max) * 100) : null);
-    const scoreColor = (a.notGraded || pct == null) ? 'var(--text3)' : gradeColor(pct);
-    const scoreText  = a.notGraded ? 'Ungraded'
-                     : hasScore    ? (hasMax ? `${parseFloat(a.score).toFixed(0)} / ${a.max}` : `${a.score}`)
-                     : '—';
-    const pctText    = (!a.notGraded && pct != null) ? `${pct}%` : '';
-    const badges     = [];
-    if (a.missing)    badges.push('<span class="asgn-badge badge-missing">Missing</span>');
-    if (a.late)       badges.push('<span class="asgn-badge badge-late">Late</span>');
-    if (a.dropped)    badges.push('<span class="asgn-badge badge-dropped">Dropped</span>');
-    if (a.incomplete) badges.push('<span class="asgn-badge badge-dropped">Incomplete</span>');
-    return `<div class="asgn-row">
-      <div style="min-width:0">
-        <div class="asgn-name">${a.name}</div>
-        <div class="asgn-due">${fmtDate(a.due)}${badges.length ? ' &nbsp;' + badges.join(' ') : ''}</div>
-      </div>
-      <div class="asgn-score-wrap">
-        <div class="asgn-score" style="color:${scoreColor}">${scoreText}</div>
-        ${pctText ? `<div class="asgn-max">${pctText}</div>` : ''}
-      </div>
-    </div>`;
-  }
+            total_weight = sum(g.get("group_weight", 0) for g in groups)
+            for g in groups:
+                if total_weight == 0:
+                    name = g["name"].lower()
+                    g["group_weight"] = next((w for k, w in default_weights.items() if k in name), 0)
 
-  // Pick categories for the active term
-  const catsByTerm = course.categories_by_term || {};
-  const term = (gqf !== 'all' && catsByTerm[gqf]) ? gqf
-             : ['Q4','Q3','Q2','Q1','Final'].find(t => catsByTerm[t]?.length) || null;
-  const cats = term ? (catsByTerm[term] || []) : [];
+            group_scores = {}
+            for s in subs:
+                if s.get("score") is None:
+                    continue
+                aid = s["assignment_id"]
+                for g in groups:
+                    if any(a["id"] == aid for a in g.get("assignments", [])):
+                        gid = g["id"]
+                        if gid not in group_scores:
+                            group_scores[gid] = {"earned": 0, "possible": 0, "weight": g["group_weight"]}
+                        group_scores[gid]["earned"]   += s["score"]
+                        group_scores[gid]["possible"] += (
+                            s["assignment"]["points_possible"]
+                            if s.get("assignment") and s["assignment"].get("points_possible")
+                            else 0
+                        )
 
-  // Fallback: categories_by_term not yet populated — use flat assignments filtered by term dates
-  if (!cats.length) {
-    let flat = course.assignments || [];
-    if (flat.length && gqf !== 'all' && course.term_start && course.term_end) {
-      const s = new Date(course.term_start), e = new Date(course.term_end);
-      flat = flat.filter(a => { if (!a.due) return true; const d = new Date(a.due); return d >= s && d <= e; });
-    }
-    flat = [...flat].sort((a, b) => {
-      if (!a.due && !b.due) return 0; if (!a.due) return 1; if (!b.due) return -1;
-      return new Date(b.due) - new Date(a.due);
-    });
-    if (flat.length) {
-      body.innerHTML = flat.map(a => asgnRow(a)).join('') +
-        `<div style="font-size:11px;color:var(--text3);padding:12px 0 4px">Sync IC to load category weights and grade predictor.</div>`;
-      return;
-    }
-    body.innerHTML = `<div class="drawer-empty">No assignments found for this term.<br>
-      <span style="font-size:11px;color:var(--text3);margin-top:6px;display:block">Sync IC to refresh.</span>
-    </div>`;
-    return;
-  }
+            for bucket, missing_only in [("future", False), ("past", True)]:
+                try:
+                    items = canvas_get(domain, token, f"/courses/{cid}/assignments", {
+                        "per_page": 100,
+                        "bucket":   bucket,
+                        "order_by": "due_at",
+                    })
+                    for a in items:
+                        if missing_only and not a.get("is_missing_submission"):
+                            continue
+                        if not any(x["id"] == a["id"] for x in assignments):
+                            gid   = a.get("assignment_group_id")
+                            gname = next((g["name"] for g in groups if g["id"] == gid), None)
+                            assignments.append(format_assignment(
+                                a, cname, now,
+                                group_id=gid,
+                                group_name=gname,
+                                group_scores=group_scores,
+                            ))
+                except Exception:
+                    pass
 
-  let html = '';
+        assignments.sort(key=lambda a: (0 if a["missing"] else 1, a["due_raw"] or "9999"))
 
-  // Category weight chips
-  if (cats.length) {
-    html += `<div class="cat-weight-bar">`;
-    cats.forEach(c => { html += `<span class="cat-chip">${c.name} <strong>${c.weight}%</strong></span>`; });
-    html += `</div>`;
-  }
+        # ── Canvas grades: check override_score first (most accurate) ────────
+        course_data = []
+        for c in courses:
+            enrollments = c.get("enrollments") or []
+            grade = None
+            if enrollments:
+                e = enrollments[0]
+                # override_score is what the official gradebook displays when set
+                grade = (
+                    e.get("override_score") if e.get("override_score") is not None
+                    else e.get("computed_current_score")
+                )
+            course_data.append({
+                "id":      c["id"],
+                "name":    c["name"],
+                "grade":   grade,
+                "quarter": get_quarter(),
+                "source":  "canvas",
+            })
 
-  // Assignments grouped by category
-  cats.forEach(cat => {
-    html += `<div class="drawer-section-head">${cat.name} · ${cat.weight}%</div>`;
-    const sorted = [...cat.assignments].sort((a, b) => {
-      if (!a.due && !b.due) return 0;
-      if (!a.due) return 1; if (!b.due) return -1;
-      return new Date(b.due) - new Date(a.due);
-    });
-    if (!sorted.length) {
-      html += `<div class="asgn-empty-cat">No graded assignments yet.</div>`;
-    } else {
-      sorted.forEach(a => { html += asgnRow(a); });
-    }
-  });
+        return jsonify({
+            "assignments":   assignments,
+            "course_count":  len(courses),
+            "courses":       course_data,
+        })
 
-  body.innerHTML = html;
-}
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 401:
+            return jsonify({"error": "Invalid token — check your Canvas access token"}), 401
+        return jsonify({"error": f"Canvas API error: {e.response.status_code}"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-// Make IC grade cards open drawer on click
-function _bindGradeCardClicks() {
-  if (!(_ic.connected && _ic.enabled && _ic.grades.length > 0)) return;
-  const list = window._icFiltered || _ic.grades;
-  document.querySelectorAll('#gradeGrid .grade-card').forEach((card, i) => {
-    const course = list[i];
-    if (!course) return;
-    card.onclick = (e) => { e.stopPropagation(); openDrawer(course); };
-  });
-}
-</script>
-</body>
-</html>
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
