@@ -1381,7 +1381,7 @@ function renderDash() {
 }
 
 function _fillAssignmentsFromIC() {
-  if (all.length || !_ic.connected || !_ic.enabled) return;
+  if (all.length || !_ic.connected) return;
   // Only use the most recent term (Q4 > Q3 > Q2 > Q1)
   const termOrder   = ['Q4','Q3','Q2','Q1','Final'];
   const currentTerm = termOrder.find(t => (_ic.grades || []).some(c => c.term === t));
