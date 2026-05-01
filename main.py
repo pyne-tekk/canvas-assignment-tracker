@@ -10,6 +10,7 @@ import json
 import logging
 import atexit
 import time
+import gc
 from cryptography.fernet import Fernet
 from apscheduler.schedulers.background import BackgroundScheduler
 from supabase import create_client
@@ -141,6 +142,11 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
                 '--single-process',
                 '--disable-extensions',
                 '--disable-background-networking',
+                '--disable-images',
+                '--blink-settings=imagesEnabled=false',
+                '--js-flags=--max-old-space-size=96',
+                '--disk-cache-size=1',
+                '--media-cache-size=1',
             ]
         )
         log.info('Playwright: browser launched')
@@ -313,6 +319,10 @@ def playwright_ic_sync(username: str, password: str, ic_domain: str) -> list:
         except Exception as e:
             raise RuntimeError(f'NCEDCloud SSO error: {e}')
         finally:
+            try:
+                context.close()
+            except Exception:
+                pass
             browser.close()
 
 
@@ -567,18 +577,36 @@ def _parse_ic_html(html: str) -> list:
 
 
 # ── Background sync ────────────────────────────────────────────────────────────
+def _grade_snapshot(grades: list) -> dict:
+    """Build a {(name, term): grade} map for change detection."""
+    return {(c.get('name', ''), c.get('term', '')): c.get('grade') for c in (grades or [])}
+
+
 def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str, token: str = None):
     """Re-auth and refresh IC grades for a single user. Returns grades list on success, None on failure."""
     try:
+        db = user_db(token) if token else (_admin or supabase)
+
+        # Fetch existing cache for change detection — best-effort, never blocks sync
+        old_grades = []
+        try:
+            old_row = db.table('users').select('ic_grades_cache').eq('id', uid).execute()
+            if old_row.data:
+                old_grades = old_row.data[0].get('ic_grades_cache') or []
+        except Exception:
+            pass
+
         password = decrypt_val(encrypted_pw)
         grades = playwright_ic_sync(ic_username, password, ic_domain)
-        db = user_db(token) if token else (_admin or supabase)
+
         db.table('users').update({
             'ic_grades_cache': grades,
             'ic_synced_at': datetime.now(timezone.utc).isoformat(),
         }).eq('id', uid).execute()
         log.info(f'IC sync OK for user {uid[:8]}… ({len(grades)} courses)')
+
         send_grade_email(uid, len(grades))
+
         return grades
     except Exception as e:
         log.warning(f'IC sync failed for user {uid[:8]}…: {e}')
@@ -609,7 +637,8 @@ def sync_all_ic_users():
         log.info(f'IC sync job: {len(rows)} users to refresh')
         for row in rows:
             sync_user_ic(row['id'], row['ic_domain'], row['ic_username'], row['ic_password'])
-            time.sleep(8)  # let Chromium fully exit before next user
+            gc.collect()       # force Python to release scrape data before next Chromium launch
+            time.sleep(20)     # give Chromium processes time to fully exit
     except Exception as e:
         log.error(f'IC sync job error: {e}')
     finally:
@@ -617,7 +646,7 @@ def sync_all_ic_users():
 
 
 scheduler = BackgroundScheduler(daemon=True)
-scheduler.add_job(sync_all_ic_users, 'interval', minutes=3, id='ic_sync', replace_existing=True)
+scheduler.add_job(sync_all_ic_users, 'interval', minutes=3, id='ic_sync', replace_existing=True, max_instances=1, coalesce=True)
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown(wait=False))
 
