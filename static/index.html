@@ -1196,7 +1196,9 @@ async function syncICNow() {
     st.textContent = `Done — ${_ic.grades.length} course${_ic.grades.length !== 1 ? 's' : ''}`;
     const syncEl = document.getElementById('icSyncedDisplay');
     if (syncEl) syncEl.textContent = 'Just now';
+    all = []; _fillAssignmentsFromIC();
     renderGrades(window._courses || []);
+    renderAssign(); renderDash();
   } catch (e) {
     st.style.color = 'var(--orange)'; st.textContent = 'Sync running in background — reload in 2 min.';
     await loadICStatus();
