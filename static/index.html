@@ -393,11 +393,12 @@ body {
 .cal-detail-head { padding: 16px 18px; border-bottom: 1px solid var(--border); font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: 0.8px; text-transform: uppercase; }
 #calDetail .assign-list { border: none; border-radius: 0; background: transparent; backdrop-filter: none; }
 #calDetail .assign-card { padding: 12px 16px; }
-.ap-wrap { display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
-.ap-label { font-size:11px; color:var(--text3); white-space:nowrap; }
+.ap-wrap   { margin-top:10px; padding-top:8px; border-top:1px solid var(--border); }
+.ap-row    { display:flex; align-items:center; gap:8px; }
+.ap-label  { font-size:11px; color:var(--text3); white-space:nowrap; }
 .ap-slider { flex:1; min-width:80px; max-width:160px; accent-color:var(--blue); height:3px; cursor:pointer; }
-.ap-score  { font-size:11px; font-weight:600; color:var(--text2); min-width:28px; }
-.ap-result { font-size:11px; font-weight:600; min-width:0; }
+.ap-score  { font-size:12px; font-weight:600; color:var(--text2); min-width:32px; }
+.ap-result { display:block; font-size:12px; font-weight:600; margin-top:4px; min-height:16px; }
 
 /* ─── Settings ────────────────────────────────────────── */
 .settings-card { background: oklch(14% 0.017 252 / 0.65); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; backdrop-filter: blur(4px); }
@@ -1007,19 +1008,32 @@ function updateAssignPrediction(slider) {
   const resultEl   = slider.parentElement.querySelector('.ap-result');
   if (scoreEl) scoreEl.textContent = score + '%';
 
-  const course = (_ic.grades || []).find(c => c.name === courseName && (gqf === 'all' || c.term === gqf));
+  // Find course — prefer matching term, fall back to any with categories loaded
+  const allMatches = (_ic.grades || []).filter(c => c.name === courseName);
+  const course = allMatches.find(c => c.term === gqf)
+              || allMatches.find(c => c.categories_by_term && Object.keys(c.categories_by_term).length > 0)
+              || allMatches[0];
   if (!course) return;
   const catsByTerm = course.categories_by_term || {};
+  const termKeys   = Object.keys(catsByTerm);
   const term = (gqf !== 'all' && catsByTerm[gqf]) ? gqf
-             : ['Q4','Q3','Q2','Q1','Final'].find(t => catsByTerm[t]) || null;
+             : ['Q4','Q3','Q2','Q1','Final'].find(t => catsByTerm[t])
+             || termKeys[0] || null;
   const cats = term ? (catsByTerm[term] || []) : [];
-  const predicted = predictGrade(cats, [{ cat: catName, score }]);
+
   if (resultEl) {
+    if (!cats.length) {
+      resultEl.textContent = '— reload page after sync';
+      resultEl.style.color = 'var(--text3)';
+      return;
+    }
+    const predicted = predictGrade(cats, [{ cat: catName, score }]);
     if (predicted !== null) {
       resultEl.textContent = `→ ${predicted}% course grade`;
       resultEl.style.color = gradeColor(predicted);
     } else {
-      resultEl.textContent = '';
+      resultEl.textContent = '— category not matched';
+      resultEl.style.color = 'var(--text3)';
     }
   }
 }
@@ -1184,8 +1198,11 @@ async function syncICNow() {
     if (syncEl) syncEl.textContent = 'Just now';
     renderGrades(window._courses || []);
   } catch (e) {
-    st.style.color = 'var(--red)'; st.textContent = 'Could not reach backend.';
+    st.style.color = 'var(--orange)'; st.textContent = 'Sync running in background — reload in 2 min.';
   }
+  // Always reload from Supabase so categories_by_term is fresh in memory
+  await loadICStatus();
+  renderGrades(window._courses || []);
   btn.disabled = false;
 }
 
@@ -1435,16 +1452,18 @@ function assignCard(a) {
       </div>` : '';
   const showPredictor = a._source === 'ic' && a.score == null && a.group;
   const predictor = showPredictor
-    ? `<div class="ap-wrap" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();event.preventDefault()">
-        <span class="ap-label">What if I get</span>
-        <input type="range" class="ap-slider" min="0" max="100" value="85"
-          data-course="${a.course.replace(/"/g,'&quot;')}"
-          data-cat="${(a.group||'').replace(/"/g,'&quot;')}"
-          oninput="updateAssignPrediction(this)">
-        <span class="ap-score">85%</span>
+    ? `<div class="ap-wrap" onmousedown="event.stopPropagation()" ondragstart="event.preventDefault()" onclick="event.stopPropagation();event.preventDefault()">
+        <div class="ap-row">
+          <span class="ap-label">Predict</span>
+          <input type="range" class="ap-slider" min="0" max="100" value="85"
+            data-course="${a.course.replace(/"/g,'&quot;')}"
+            data-cat="${(a.group||'').replace(/"/g,'&quot;')}"
+            oninput="updateAssignPrediction(this)">
+          <span class="ap-score">85%</span>
+        </div>
         <span class="ap-result"></span>
       </div>` : '';
-  return `<a class="assign-card" href="${a.url||'#'}" target="_blank" rel="noopener">
+  return `<a class="assign-card" href="${a.url||'#'}" target="_blank" rel="noopener" draggable="false">
     <div class="assign-bar ${bar}"></div>
     <div style="min-width:0;flex:1">
       <div class="assign-name">${a.name}</div>
