@@ -18,7 +18,8 @@ log = logging.getLogger(__name__)
 
 SUPABASE_URL = "https://ktkwtlrnrzrnigevvccc.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0a3d0bHJucnpybmlnZXZ2Y2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyNTQ5NDIsImV4cCI6MjA5MjgzMDk0Mn0.RuKhrCpfa-kl16dQ1FBdi6v3crZUPcyB-xPDkW7nmYo"
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)   # table queries — stays on anon key
+_auth    = create_client(SUPABASE_URL, SUPABASE_KEY)   # auth ops only — session mutations isolated here
 
 app = Flask(__name__, static_folder='static')
 CORS(app)
@@ -42,7 +43,7 @@ def decrypt_val(s: str) -> str:
 # ── Auth helper ────────────────────────────────────────────────────────────────
 def get_uid(auth_header: str) -> str:
     token = auth_header.replace('Bearer ', '').strip()
-    user = supabase.auth.get_user(token)
+    user = _auth.auth.get_user(token)
     return user.user.id
 
 # ── NCEDCloud + Infinite Campus ────────────────────────────────────────────────
@@ -738,7 +739,7 @@ def ic_status():
 def signup():
     data = request.json
     try:
-        res = supabase.auth.sign_up({"email": data["email"], "password": data["password"]})
+        res = _auth.auth.sign_up({"email": data["email"], "password": data["password"]})
         return jsonify({"ok": True, "user": res.user.id})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -748,7 +749,7 @@ def signup():
 def login_user():
     data = request.json
     try:
-        res = supabase.auth.sign_in_with_password({"email": data["email"], "password": data["password"]})
+        res = _auth.auth.sign_in_with_password({"email": data["email"], "password": data["password"]})
         return jsonify({"ok": True, "token": res.session.access_token, "refresh_token": res.session.refresh_token})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -761,7 +762,7 @@ def refresh_token():
     if not rt:
         return jsonify({"error": "missing refresh_token"}), 400
     try:
-        res = supabase.auth.refresh_session(rt)
+        res = _auth.auth.refresh_session(rt)
         return jsonify({"ok": True, "token": res.session.access_token, "refresh_token": res.session.refresh_token})
     except Exception as e:
         return jsonify({"error": str(e)}), 401
@@ -772,7 +773,7 @@ def save_canvas():
     data = request.json
     auth_token = request.headers.get("Authorization", "").replace("Bearer ", "")
     try:
-        user = supabase.auth.get_user(auth_token)
+        user = _auth.auth.get_user(auth_token)
         uid  = user.user.id
         supabase.table("users").upsert({
             "id":            uid,
@@ -789,7 +790,7 @@ def save_canvas():
 def load_canvas():
     auth_token = request.headers.get("Authorization", "").replace("Bearer ", "")
     try:
-        user = supabase.auth.get_user(auth_token)
+        user = _auth.auth.get_user(auth_token)
         uid  = user.user.id
         res  = supabase.table("users").select("canvas_domain, canvas_token").eq("id", uid).execute()
         return jsonify(res.data[0] if res.data else {})
