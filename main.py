@@ -749,9 +749,22 @@ def login_user():
     data = request.json
     try:
         res = supabase.auth.sign_in_with_password({"email": data["email"], "password": data["password"]})
-        return jsonify({"ok": True, "token": res.session.access_token})
+        return jsonify({"ok": True, "token": res.session.access_token, "refresh_token": res.session.refresh_token})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/refresh_token", methods=["POST"])
+def refresh_token():
+    data = request.json or {}
+    rt = data.get("refresh_token", "")
+    if not rt:
+        return jsonify({"error": "missing refresh_token"}), 400
+    try:
+        res = supabase.auth.refresh_session(rt)
+        return jsonify({"ok": True, "token": res.session.access_token, "refresh_token": res.session.refresh_token})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
 
 
 @app.route("/api/save_canvas", methods=["POST"])
