@@ -600,7 +600,7 @@ def sync_all_ic_users():
 
 
 scheduler = BackgroundScheduler(daemon=True)
-scheduler.add_job(sync_all_ic_users, 'interval', minutes=20, id='ic_sync', replace_existing=True)
+scheduler.add_job(sync_all_ic_users, 'interval', minutes=1, id='ic_sync', replace_existing=True)
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown(wait=False))
 
