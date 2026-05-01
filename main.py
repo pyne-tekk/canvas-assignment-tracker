@@ -673,6 +673,7 @@ def sync_ic_now():
         return jsonify({'error': 'Unauthorized'}), 401
 
     res = supabase.table('users').select('ic_domain, ic_username, ic_password').eq('id', uid).execute()
+    log.info(f'sync_ic_now: uid={uid[:8]} res.data={res.data} ic_domain={res.data[0].get("ic_domain") if res.data else None} ic_password_len={len(res.data[0].get("ic_password") or "") if res.data else 0}')
     if not res.data or not res.data[0].get('ic_domain') or not res.data[0].get('ic_password'):
         return jsonify({'error': 'reconnect', 'message': 'IC credentials missing — re-enter them in Settings.'}), 400
     row = res.data[0]
