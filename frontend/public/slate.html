@@ -804,10 +804,12 @@ function makeChipTexture(label, value, accent) {
   ctx.fillStyle = accent; ctx.beginPath(); ctx.arc(46, 48, 9, 0, Math.PI*2); ctx.fill();
   ctx.fillStyle = 'rgba(210,224,255,0.78)'; ctx.font = '500 26px Geist, sans-serif';
   ctx.fillText(label, 72, 58);
-  ctx.fillStyle = '#ffffff'; ctx.font = '600 190px Geist, sans-serif';
+  ctx.fillStyle = '#dfe8ff'; ctx.font = '600 190px Geist, sans-serif';
   ctx.fillText(value, 42, 268);
   ctx.fillStyle = 'rgba(160,180,220,0.75)'; ctx.font = '500 24px Geist, sans-serif';
-  ctx.fillText('live', w - 104, 58);
+  ctx.textAlign = 'right';
+  ctx.fillText('Live', w - 42, 58);
+  ctx.textAlign = 'left';
   ctx.fillStyle = 'rgba(140,180,255,0.18)'; roundRect(ctx, 46, 318, w-92, 8, 4); ctx.fill();
   ctx.fillStyle = accent; roundRect(ctx, 46, 318, (w-92)*0.82, 8, 4); ctx.fill();
   const tex = new THREE.CanvasTexture(c);
@@ -912,7 +914,8 @@ function buildWire(fromX, fromY, colorHex, seed) {
         float t = uTime * (0.8 + uSeed*0.3);
         float stripe = 0.5 + 0.5 * sin((vUv.x * 26.0) - t * 4.0);
         stripe = pow(stripe, 5.0);
-        float head = smoothstep(0.0, 0.08, vUv.x) * (1.0 - smoothstep(0.92, 1.0, vUv.x));
+        /* fade in near start, fade out well before the end so wires "disappear" into the card */
+        float head = smoothstep(0.0, 0.08, vUv.x) * (1.0 - smoothstep(0.72, 0.92, vUv.x));
         vec3 col = uColor * (base + stripe * 1.7 * uFlow);
         float a = (base + stripe * 0.9) * head * uAlpha;
         gl_FragColor = vec4(col, a);
@@ -981,7 +984,7 @@ function makeSliderTexture(d, pos, gradeText) {
   roundRect(ctx, 1, 1, w-2, h-2, 22); ctx.stroke();
 
   /* label */
-  ctx.fillStyle = 'rgba(210,224,255,0.8)';
+  ctx.fillStyle = 'rgba(210,224,255,0.88)';
   ctx.font = '500 26px Geist, sans-serif';
   ctx.fillText(d.label, 44, 46);
 
@@ -992,15 +995,17 @@ function makeSliderTexture(d, pos, gradeText) {
   roundRect(ctx, gradeX, 16, gradeW, 54, 18); ctx.fill();
   ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
   roundRect(ctx, gradeX + 0.75, 16.75, gradeW - 1.5, 52.5, 18); ctx.stroke();
-  ctx.fillStyle = 'rgba(210,224,255,0.72)';
+  ctx.fillStyle = 'rgba(210,224,255,0.78)';
   ctx.font = '500 18px Geist, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('class grade', gradeX + 22, 48);
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Class Grade', gradeX + 22, 16 + 54/2);
   ctx.fillStyle = d.color;
   ctx.font = '600 26px Geist, sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText(gradeText, gradeX + gradeW - 22, 49);
+  ctx.fillText(gradeText, gradeX + gradeW - 22, 16 + 54/2 + 1);
   ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
 
   /* slider track */
   const trackX = 44, trackY = 118, trackW = w - 88, trackH = 10;
@@ -1023,12 +1028,10 @@ function makeSliderTexture(d, pos, gradeText) {
 
   /* handle dot */
   const hx = trackX + fillW;
-  ctx.shadowColor = d.color; ctx.shadowBlur = 22;
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = '#e8eeff';
   ctx.beginPath(); ctx.arc(hx, trackY + trackH/2, 13, 0, Math.PI*2); ctx.fill();
   ctx.fillStyle = d.color;
   ctx.beginPath(); ctx.arc(hx, trackY + trackH/2, 7, 0, Math.PI*2); ctx.fill();
-  ctx.shadowBlur = 0;
 
   /* score label under handle */
   ctx.fillStyle = 'rgba(210,224,255,0.8)';
@@ -1038,9 +1041,9 @@ function makeSliderTexture(d, pos, gradeText) {
   ctx.fillText(scoreText, Math.max(trackX, Math.min(hx - scoreW/2, trackX + trackW - scoreW)), trackY + 42);
 
   /* footer hint */
-  ctx.fillStyle = 'rgba(160,180,220,0.45)';
+  ctx.fillStyle = 'rgba(160,180,220,0.55)';
   ctx.font = '500 13px Geist, sans-serif';
-  ctx.fillText('drag to see what you need', 44, trackY + 62);
+  ctx.fillText('Drag To See What You Need', 44, trackY + 62);
 
   const tex = new THREE.CanvasTexture(c);
   tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -1344,9 +1347,9 @@ composer.addPass(new RenderPass(scene, camera));
 
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.72,   // strength
-  0.32,   // radius  -> smaller = crisper
-  0.28    // threshold
+  0.55,   // strength
+  0.22,   // radius  -> smaller = crisper
+  0.62    // threshold -> higher so UI text doesn't bloom
 );
 composer.addPass(bloomPass);
 
@@ -1567,13 +1570,17 @@ function tick(){
     w.mesh.material.uniforms.uFlow.value = smoothstep(0.2, 0.8, wireIn);
   });
 
-  /* signal packets travel along their curves */
+  /* signal packets travel along their curves (fade out before reaching the card) */
   wireSignals.forEach((s, i) => {
     const tt = (t * s.speed + s.offset) % 1;
-    const pt = s.curve.getPoint(tt);
+    /* clamp effective travel so signals vanish before touching the card */
+    const tClamped = Math.min(tt, 0.85);
+    const pt = s.curve.getPoint(tClamped);
     s.sig.position.copy(pt);
     s.glow.position.copy(pt);
-    const a = wireAlpha * (1 - Math.pow(tt - 0.5, 2) * 1.8); // brighten at middle
+    /* visibility: bright middle, fade out past 0.78 so signals disappear at the card */
+    const travel = smoothstep(0.0, 0.12, tt) * (1.0 - smoothstep(0.72, 0.88, tt));
+    const a = wireAlpha * travel;
     s.sig.material.opacity = Math.max(0, a);
     s.glow.material.uniforms.uAlpha.value = Math.max(0, a);
   });
