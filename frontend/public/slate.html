@@ -16,15 +16,14 @@
     --slate-bg: oklch(11% 0.018 252);
     --slate-bg-2: oklch(9% 0.020 252);
     --slate-ink: oklch(96% 0.010 252);
-    --slate-ink-soft: oklch(78% 0.018 252);
+    --slate-ink-soft: oklch(80% 0.018 252);
     --slate-ink-dim: oklch(62% 0.020 252);
     --slate-blue: oklch(62% 0.148 252);
     --slate-blue-bright: oklch(72% 0.160 252);
     --slate-green: oklch(68% 0.140 152);
     --slate-line: color-mix(in oklch, var(--slate-ink) 10%, transparent);
     --slate-line-soft: color-mix(in oklch, var(--slate-ink) 6%, transparent);
-    --slate-radius: 14px;
-    --slate-max: 1240px;
+    --slate-max: 1280px;
   }
 
   *,*::before,*::after{ box-sizing: border-box; }
@@ -41,28 +40,15 @@
   }
   ::selection{ background: color-mix(in oklch, var(--slate-blue) 45%, transparent); color: var(--slate-ink); }
 
-  /* Fixed canvas */
   #slate-bg{
     position: fixed; inset: 0; width: 100%; height: 100%;
     z-index: 0; display:block;
     pointer-events: none;
   }
-  /* Subtle film-grain + vignette for premium feel */
   .slate-grain{
     position: fixed; inset: 0; z-index: 1; pointer-events:none;
-    background-image:
-      radial-gradient(ellipse at 50% 10%, transparent 0%, color-mix(in oklch, var(--slate-bg) 55%, transparent) 70%, var(--slate-bg) 100%),
-      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.55  0 0 0 0 0.60  0 0 0 0 0.72  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-    mix-blend-mode: screen;
-    opacity: .65;
-  }
-
-  /* Readability scrim behind text blocks */
-  .slate-scrim{
-    position:absolute; inset:0; pointer-events:none; z-index:1;
-    background: radial-gradient(ellipse 70% 50% at var(--sx,50%) var(--sy,50%),
-      color-mix(in oklch, var(--slate-bg) 60%, transparent) 0%,
-      transparent 70%);
+    background: radial-gradient(ellipse at 50% 10%, transparent 0%, color-mix(in oklch, var(--slate-bg) 45%, transparent) 75%, var(--slate-bg) 100%);
+    opacity: .6;
   }
 
   header.slate-nav{
@@ -114,24 +100,28 @@
   }
   section.slate-section::after{
     content:""; position:absolute; inset:0; pointer-events:none; z-index:1;
-    background: radial-gradient(ellipse 55% 55% at var(--tx, 25%) 50%,
-      color-mix(in oklch, var(--slate-bg) 55%, transparent) 0%,
-      transparent 70%);
+    background: radial-gradient(ellipse 50% 60% at var(--tx, 28%) 50%,
+      color-mix(in oklch, var(--slate-bg) 45%, transparent) 0%,
+      transparent 75%);
   }
-  section.slate-section.right-text::after{ --tx: 75%; }
-  section.slate-section.hero-text::after{ display:none; }
+  section.slate-section.right-text::after{ --tx: 72%; }
+  section.slate-section.hero-text::after{
+    background: radial-gradient(ellipse 60% 50% at 50% 45%,
+      color-mix(in oklch, var(--slate-bg) 55%, transparent) 0%,
+      transparent 75%);
+  }
+
   .slate-container{
     width: 100%; max-width: var(--slate-max); margin: 0 auto;
     position: relative; z-index: 2;
   }
 
-  /* Typography */
   .slate-eyebrow{
     font-size: 12px; font-weight: 500; letter-spacing: 0.24em;
     text-transform: uppercase;
     color: var(--slate-blue-bright);
     display:inline-flex; align-items:center; gap: 10px;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
   }
   .slate-eyebrow::before{
     content:""; width: 28px; height:1px; background: var(--slate-blue-bright);
@@ -141,7 +131,7 @@
   .slate-display{
     font-weight: 500;
     letter-spacing: -0.035em;
-    line-height: 0.98;
+    line-height: 1.02;
     color: var(--slate-ink);
     margin: 0;
     user-select: none;
@@ -152,16 +142,16 @@
   .slate-display .w.accent-green{ color: var(--slate-green); }
 
   .slate-h1{
-    font-size: clamp(42px, 7.5vw, 104px);
+    font-size: clamp(42px, 7vw, 100px);
     text-shadow:
-      0 2px 30px rgba(5,8,18,0.85),
-      0 0 80px rgba(5,8,18,0.6);
+      0 2px 32px rgba(5,8,18,0.9),
+      0 0 90px rgba(5,8,18,0.55);
   }
   .slate-h2{
-    font-size: clamp(36px, 6.2vw, 84px); max-width: 16ch;
-    text-shadow: 0 2px 24px rgba(5,8,18,0.7);
+    font-size: clamp(34px, 5.2vw, 72px);
+    text-shadow: 0 2px 26px rgba(5,8,18,0.8);
   }
-  .slate-h2.right{ margin-left:auto; text-align:right; max-width: 18ch; }
+  .slate-h2.right{ margin-left:auto; text-align:right; }
 
   .slate-lede{
     font-size: clamp(15px, 1.15vw, 17px);
@@ -169,7 +159,8 @@
     color: var(--slate-ink-soft);
     max-width: 48ch;
     font-weight: 300;
-    text-shadow: 0 1px 16px rgba(5,8,18,0.9);
+    text-shadow: 0 1px 18px rgba(5,8,18,0.95);
+    margin-top: 28px;
   }
   .slate-lede.right{ margin-left:auto; text-align:right; }
 
@@ -181,41 +172,36 @@
     border-radius: 999px;
     font-size: 12px; font-weight: 500; letter-spacing: 0.03em;
     color: var(--slate-ink-soft);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
   .slate-tag .dot-b{ width:6px; height:6px; border-radius:50%; background: var(--slate-blue-bright); box-shadow: 0 0 12px var(--slate-blue-bright); }
   .slate-tag .dot-g{ width:6px; height:6px; border-radius:50%; background: var(--slate-green); box-shadow: 0 0 12px var(--slate-green); }
 
   /* HERO */
-  #slate-hero .slate-container{ text-align:center; position: relative; }
-  #slate-hero::before{
-    content:""; position:absolute; inset:0; pointer-events:none; z-index:1;
-    background: radial-gradient(ellipse 60% 40% at 50% 42%,
-      color-mix(in oklch, var(--slate-bg) 78%, transparent) 0%,
-      color-mix(in oklch, var(--slate-bg) 35%, transparent) 45%,
-      transparent 80%);
-  }
+  #slate-hero{ text-align:center; }
+  #slate-hero .slate-container{ text-align:center; }
   #slate-hero .slate-h1{
-    font-size: clamp(40px, 6.5vw, 92px);
-    max-width: 24ch; margin: 0 auto; position: relative;
+    max-width: 22ch; margin: 0 auto;
     white-space: nowrap;
-    padding-bottom: 0.12em;
   }
-  #slate-hero .slate-lede{ margin-top: 44px; position: relative; }
-  @media (max-width: 760px){
+  @media (max-width: 820px){
     #slate-hero .slate-h1{ white-space: normal; }
   }
-  #slate-hero .slate-lede{ margin: 32px auto 0; }
+  #slate-hero .slate-lede{ margin: 40px auto 0; }
   #slate-hero .hero-tags{
     display:flex; gap: 12px; justify-content:center; margin-top: 36px; flex-wrap: wrap;
+    position: relative;
   }
   #slate-hero .scroll-hint{
-    position: absolute; left:50%; bottom: 40px; transform: translateX(-50%);
+    position: absolute; left:50%; bottom: 36px; transform: translateX(-50%);
     font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
     color: var(--slate-ink-dim);
     display:flex; flex-direction:column; align-items:center; gap: 12px;
+    z-index: 3;
   }
   #slate-hero .scroll-hint .bar{
-    width: 1px; height: 42px;
+    width: 1px; height: 40px;
     background: linear-gradient(to bottom, var(--slate-ink-dim), transparent);
     animation: slate-scroll 2.4s ease-in-out infinite;
     transform-origin: top;
@@ -228,11 +214,14 @@
   /* Split layouts */
   .slate-split{ display:grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items:center; width:100%; }
   .slate-split.reverse{ grid-template-columns: .95fr 1.05fr; }
-  @media (max-width: 860px){
+  @media (max-width: 900px){
     .slate-split, .slate-split.reverse{ grid-template-columns: 1fr; gap: 32px; }
     .slate-h2.right{ text-align:left; margin-left:0; }
     .slate-lede.right{ text-align:left; margin-left:0; }
   }
+
+  .slate-h2{ max-width: 18ch; }
+  .slate-h2.right{ max-width: 19ch; }
 
   .slate-meta-list{
     margin-top: 28px; padding: 0; list-style: none;
@@ -242,6 +231,7 @@
     font-size: 14px; color: var(--slate-ink-soft); font-weight: 300;
     display:flex; align-items:flex-start; gap: 12px;
     line-height: 1.5;
+    text-shadow: 0 1px 18px rgba(5,8,18,0.95);
   }
   .slate-meta-list li::before{
     content:""; display:block; width: 14px; height:1px; background: var(--slate-blue-bright);
@@ -251,7 +241,6 @@
   .slate-meta-list.right li::before{ order: 2; margin-left: 12px; margin-right: 0; }
   .slate-meta-list.right li span{ text-align:right; }
 
-  /* Spec line (compare) */
   .slate-compare{
     margin-top: 36px;
     border-top: 1px solid var(--slate-line-soft);
@@ -265,15 +254,16 @@
   .slate-compare .ic{ text-decoration: line-through; opacity: .6; }
 
   /* CTA section */
-  #slate-cta{ align-items: flex-start; padding-top: 14vh; padding-bottom: 10vh; }
-  #slate-cta .slate-container{ text-align:center; }
+  #slate-cta{ align-items: center; }
+  #slate-cta .slate-container{ text-align:center; position: relative; z-index: 3; }
   #slate-cta .slate-h1{
-    font-size: clamp(30px, 3.6vw, 54px);
-    max-width: 30ch; margin: 0 auto;
-    line-height: 1.08;
+    font-size: clamp(30px, 3.8vw, 56px);
+    max-width: 28ch; margin: 0 auto;
+    line-height: 1.1;
   }
   #slate-cta .cta-row{
     margin-top: 44px; display:flex; gap: 18px; justify-content:center; align-items:center; flex-wrap: wrap;
+    position: relative;
   }
   .slate-btn{
     font-family: inherit; font-size: 15px; font-weight: 500; letter-spacing: 0.01em;
@@ -299,7 +289,8 @@
   .slate-btn .arrow{ display:inline-block; margin-left: 10px; transition: transform .25s ease; }
   .slate-btn:hover .arrow{ transform: translateX(3px); }
   .slate-cta-sub{
-    color: var(--slate-ink-dim); font-size: 13px; letter-spacing: 0.04em; font-weight: 500;
+    color: var(--slate-ink-soft); font-size: 13px; letter-spacing: 0.04em; font-weight: 500;
+    text-shadow: 0 1px 18px rgba(5,8,18,0.95);
   }
 
   footer.slate-foot{
@@ -310,7 +301,6 @@
     color: var(--slate-ink-dim); font-size: 12px; letter-spacing: 0.05em;
   }
 
-  /* WebGL loading veil (avoids FOUC flicker) */
   .slate-boot{
     position: fixed; inset: 0; z-index: 60;
     display:flex; align-items:center; justify-content:center;
@@ -336,7 +326,6 @@
     100%{ transform: translateX(350%); }
   }
 
-  /* Reduce motion */
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
   }
@@ -362,11 +351,11 @@
   <!-- 1. HERO -->
   <section class="slate-section hero-text" id="slate-hero" data-act="0">
     <div class="slate-container">
-      <div class="slate-tag" data-testid="hero-badge" style="margin-bottom: 36px;">
+      <div class="slate-tag" data-testid="hero-badge" style="margin-bottom: 32px;">
         <span class="dot-b"></span> Built for students. Not administrators.
       </div>
       <h1 class="slate-display slate-h1" data-split data-testid="hero-heading">Your grades, <span class="accent">alive</span>.</h1>
-      <p class="slate-lede" data-testid="hero-lede" style="margin-top: 40px;">
+      <p class="slate-lede" data-testid="hero-lede">
         Slate pulls live data from Infinite Campus and Canvas, then shows you the number that actually matters. No refresh. No rusty portal. No guesswork on the night grades drop.
       </p>
       <div class="hero-tags">
@@ -416,7 +405,7 @@
           <div class="slate-eyebrow" style="justify-content:flex-end; display:flex;">Chapter 02 · Grade predictor</div>
           <h2 class="slate-display slate-h2 right" data-split>Know exactly what you need <span class="accent">to hit</span>.</h2>
           <p class="slate-lede right">
-            Slide a target letter. Slate reverse solves every remaining assignment, weighted by category, and tells you the exact score you need on the final. No spreadsheets. No napkin math at 1am.
+            Drag a target score. Slate reverse solves every remaining assignment, weighted by category, and tells you the overall class grade in real time. No spreadsheets. No napkin math at 1am.
           </p>
           <ul class="slate-meta-list right">
             <li><span>Weighted category math done for you in real time</span></li>
@@ -471,7 +460,7 @@
   </section>
 
   <!-- 6. CTA -->
-  <section class="slate-section hero-text" id="slate-cta" data-act="5">
+  <section class="slate-section" id="slate-cta" data-act="5">
     <div class="slate-container">
       <div class="slate-eyebrow" style="justify-content:center; display:flex;">Get Slate</div>
       <h2 class="slate-display slate-h1" data-split data-fly data-testid="cta-heading">
@@ -498,11 +487,9 @@
   <div class="line"></div>
 </div>
 
-<!-- GSAP -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
-<!-- Three.js via importmap -->
 <script type="importmap">
 {
   "imports": {
@@ -522,9 +509,9 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* ============================================================
-   Word-splitting for headings (no em-dash ever used in copy)
-   ============================================================ */
+/* ==========================================================
+   Word splitting for headings
+   ========================================================== */
 const splitTargets = document.querySelectorAll('[data-split]');
 splitTargets.forEach(el => {
   const nodes = [];
@@ -542,7 +529,6 @@ splitTargets.forEach(el => {
         }
       });
     } else if (node.nodeType === 1) {
-      // preserve existing spans (e.g. accent) but mark them as words
       node.classList.add('w');
       nodes.push(node);
     }
@@ -551,35 +537,36 @@ splitTargets.forEach(el => {
   nodes.forEach(n => el.appendChild(n));
 });
 
-/* Animate headings on scroll-in (skip CTA fly-in heading) */
+/* Generic heading stagger animations (skip CTA fly-in) - uses IntersectionObserver for reliability */
 document.querySelectorAll('[data-split]:not([data-fly])').forEach(el => {
   const words = el.querySelectorAll('.w');
   gsap.set(words, { yPercent: 110, opacity: 0 });
-  ScrollTrigger.create({
-    trigger: el,
-    start: 'top 82%',
-    once: true,
-    onEnter: () => {
-      gsap.to(words, {
-        yPercent: 0,
-        opacity: 1,
-        duration: 1.1,
-        ease: 'expo.out',
-        stagger: 0.07,
-        onComplete: () => { gsap.set(words, { clearProps: 'transform,yPercent' }); }
-      });
-    }
-  });
+  let fired = false;
+  const fire = () => {
+    if (fired) return; fired = true;
+    gsap.to(words, {
+      yPercent: 0,
+      opacity: 1,
+      duration: 1.0,
+      ease: 'expo.out',
+      stagger: 0.06,
+      onComplete: () => { gsap.set(words, { clearProps: 'transform,yPercent' }); }
+    });
+  };
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { fire(); io.disconnect(); } });
+  }, { threshold: 0.15, rootMargin: '0px 0px -12% 0px' });
+  io.observe(el);
 });
 
-/* CTA: fly-in from different directions (IntersectionObserver for reliability) */
+/* CTA fly-in via IntersectionObserver (reliable) */
 const ctaHeading = document.querySelector('[data-fly]');
 if (ctaHeading) {
   const ws = ctaHeading.querySelectorAll('.w');
   ws.forEach(w => {
-    w._dx = (Math.random() - 0.5) * 140;
-    w._dy = (Math.random() - 0.5) * 90 + 20;
-    w._rot = (Math.random() - 0.5) * 16;
+    w._dx = (Math.random() - 0.5) * 120;
+    w._dy = (Math.random() - 0.5) * 80 + 10;
+    w._rot = (Math.random() - 0.5) * 14;
   });
   gsap.set(ws, {
     x: i => ws[i]._dx,
@@ -593,7 +580,7 @@ if (ctaHeading) {
     if (fired) return; fired = true;
     gsap.to(ws, {
       x: 0, y: 0, rotate: 0, opacity: 1,
-      duration: 0.9, ease: 'expo.out', stagger: 0.04,
+      duration: 0.8, ease: 'expo.out', stagger: 0.035,
       overwrite: 'auto',
       onComplete: () => { gsap.set(ws, { clearProps: 'transform,rotate,x,y' }); }
     });
@@ -604,14 +591,17 @@ if (ctaHeading) {
   io.observe(document.getElementById('slate-cta'));
 }
 
-/* ============================================================
-   Three.js: fixed canvas behind everything
-   ============================================================ */
+/* ==========================================================
+   Three.js renderer + composer (HIGH QUALITY)
+   ========================================================== */
 const canvas = document.getElementById('slate-bg');
 const renderer = new THREE.WebGLRenderer({
-  canvas, antialias: true, alpha: true, powerPreference: 'high-performance', stencil: false,
+  canvas, antialias: true, alpha: true,
+  powerPreference: 'high-performance', stencil: false,
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+/* Supersample for crisp glows even on 1x DPI displays */
+const QUALITY_DPR = Math.min(Math.max(window.devicePixelRatio || 1, 1.6), 2.5);
+renderer.setPixelRatio(QUALITY_DPR);
 renderer.setSize(window.innerWidth, window.innerHeight, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -619,116 +609,113 @@ renderer.toneMappingExposure = 1.05;
 renderer.setClearColor(0x000000, 0);
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x05070d, 0.035);
+scene.fog = new THREE.FogExp2(0x04060c, 0.022);
 
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
-camera.position.set(0, 0, 8);
+const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 0, 9);
 
-/* Colors */
-const C_BLUE = new THREE.Color().setStyle('rgb(92, 148, 242)');   // electric
+const C_BLUE = new THREE.Color().setStyle('rgb(92, 148, 242)');
+const C_BLUE_BRIGHT = new THREE.Color().setStyle('rgb(138, 184, 255)');
 const C_BLUE_DEEP = new THREE.Color().setStyle('rgb(48, 92, 200)');
 const C_GREEN = new THREE.Color().setStyle('rgb(96, 208, 150)');
+const C_GREEN_BRIGHT = new THREE.Color().setStyle('rgb(150, 235, 185)');
 const C_INK = new THREE.Color().setStyle('rgb(220, 232, 255)');
 
-/* Lights (mostly for iridescent spheres that use standard material) */
-const ambient = new THREE.AmbientLight(0xffffff, 0.35);
-scene.add(ambient);
-const key = new THREE.DirectionalLight(0x9cc4ff, 1.1);
+/* Lights for PBR materials */
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+const key = new THREE.DirectionalLight(0x9cc4ff, 1.0);
 key.position.set(4, 5, 6);
 scene.add(key);
-const rim = new THREE.DirectionalLight(0x4dd69c, 0.55);
+const rim = new THREE.DirectionalLight(0x60d096, 0.5);
 rim.position.set(-6, -2, 3);
 scene.add(rim);
 
-/* =======================
-   Starfield (always on)
-   ======================= */
-const starGeo = new THREE.BufferGeometry();
-const STAR_COUNT = 1400;
-const starPos = new Float32Array(STAR_COUNT * 3);
-const starSize = new Float32Array(STAR_COUNT);
-const starSeed = new Float32Array(STAR_COUNT);
-for (let i = 0; i < STAR_COUNT; i++) {
-  // distribute in a thick spherical shell so parallax feels volumetric
-  const r = 22 + Math.random() * 38;
-  const theta = Math.random() * Math.PI * 2;
-  const phi = Math.acos(2 * Math.random() - 1);
-  starPos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
-  starPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-  starPos[i*3+2] = r * Math.cos(phi) - 10; // push back a bit
-  starSize[i] = Math.random() * 1.6 + 0.3;
-  starSeed[i] = Math.random() * 10.0;
-}
-starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-starGeo.setAttribute('aSize', new THREE.BufferAttribute(starSize, 1));
-starGeo.setAttribute('aSeed', new THREE.BufferAttribute(starSeed, 1));
+/* Environment for iridescence */
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envScene = new THREE.Scene();
+envScene.background = new THREE.Color(0x0b1226);
+const envL1 = new THREE.PointLight(0x6aa6ff, 10, 20); envL1.position.set(3, 3, 3); envScene.add(envL1);
+const envL2 = new THREE.PointLight(0x60d096, 7, 20); envL2.position.set(-3, -2, 2); envScene.add(envL2);
+scene.environment = pmrem.fromScene(envScene, 0.04).texture;
 
+/* ==========================================================
+   STARFIELD (always visible)
+   ========================================================== */
+const STAR_COUNT = 1600;
+const starGeo = new THREE.BufferGeometry();
+const sP = new Float32Array(STAR_COUNT * 3);
+const sS = new Float32Array(STAR_COUNT);
+const sD = new Float32Array(STAR_COUNT);
+for (let i = 0; i < STAR_COUNT; i++) {
+  const r = 24 + Math.random() * 42;
+  const th = Math.random() * Math.PI * 2;
+  const ph = Math.acos(2 * Math.random() - 1);
+  sP[i*3] = r * Math.sin(ph) * Math.cos(th);
+  sP[i*3+1] = r * Math.sin(ph) * Math.sin(th);
+  sP[i*3+2] = r * Math.cos(ph) - 12;
+  sS[i] = Math.random() * 1.4 + 0.25;
+  sD[i] = Math.random() * 10.0;
+}
+starGeo.setAttribute('position', new THREE.BufferAttribute(sP, 3));
+starGeo.setAttribute('aSize', new THREE.BufferAttribute(sS, 1));
+starGeo.setAttribute('aSeed', new THREE.BufferAttribute(sD, 1));
 const starMat = new THREE.ShaderMaterial({
-  transparent: true,
-  depthWrite: false,
-  blending: THREE.AdditiveBlending,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   uniforms: {
     uTime: { value: 0 },
-    uPixelRatio: { value: renderer.getPixelRatio() },
-    uColorA: { value: C_INK },
-    uColorB: { value: C_BLUE },
+    uPR: { value: renderer.getPixelRatio() },
+    uA: { value: C_INK.clone() },
+    uB: { value: C_BLUE.clone() },
   },
   vertexShader: `
-    attribute float aSize;
-    attribute float aSeed;
-    uniform float uTime;
-    uniform float uPixelRatio;
-    varying float vSeed;
+    attribute float aSize; attribute float aSeed;
+    uniform float uTime; uniform float uPR;
+    varying float vS;
     void main(){
-      vSeed = aSeed;
-      vec4 mv = modelViewMatrix * vec4(position, 1.0);
-      float tw = 0.6 + 0.4 * sin(uTime * 0.8 + aSeed * 6.28);
-      gl_PointSize = aSize * uPixelRatio * (160.0 / -mv.z) * tw;
+      vS = aSeed;
+      vec4 mv = modelViewMatrix * vec4(position,1.0);
+      float tw = 0.55 + 0.45*sin(uTime*0.9 + aSeed*6.28);
+      gl_PointSize = aSize * uPR * (160.0 / -mv.z) * tw;
       gl_Position = projectionMatrix * mv;
     }
   `,
   fragmentShader: `
-    uniform vec3 uColorA;
-    uniform vec3 uColorB;
-    varying float vSeed;
+    uniform vec3 uA; uniform vec3 uB;
+    varying float vS;
     void main(){
-      vec2 uv = gl_PointCoord - 0.5;
-      float d = length(uv);
+      vec2 u = gl_PointCoord - 0.5;
+      float d = length(u);
       float a = smoothstep(0.5, 0.0, d);
-      a *= smoothstep(0.5, 0.35, d) * 0.5 + a * 0.5;
-      vec3 col = mix(uColorA, uColorB, fract(vSeed));
-      gl_FragColor = vec4(col, a);
+      a *= a;
+      vec3 c = mix(uA, uB, fract(vS));
+      gl_FragColor = vec4(c, a);
     }
   `,
 });
 const stars = new THREE.Points(starGeo, starMat);
 scene.add(stars);
 
-/* =======================
-   Glass Fresnel Orb (hero + CTA)
-   ======================= */
+/* ==========================================================
+   ORB (Fresnel) – hero & CTA (CTA uses gyro instead)
+   ========================================================== */
 const orbGroup = new THREE.Group();
 scene.add(orbGroup);
 
-const orbGeo = new THREE.SphereGeometry(1.6, 128, 128);
 const orbMat = new THREE.ShaderMaterial({
-  transparent: true,
-  depthWrite: false,
-  blending: THREE.AdditiveBlending,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   uniforms: {
     uTime: { value: 0 },
     uColorCore: { value: C_BLUE_DEEP.clone() },
-    uColorEdge: { value: C_BLUE.clone().multiplyScalar(1.3) },
-    uPower: { value: 2.4 },
+    uColorEdge: { value: C_BLUE.clone().multiplyScalar(1.35) },
+    uPower: { value: 2.3 },
+    uAlpha: { value: 1 },
   },
   vertexShader: `
-    varying vec3 vN;
-    varying vec3 vV;
-    varying vec3 vP;
+    varying vec3 vN; varying vec3 vV; varying vec3 vP;
     uniform float uTime;
     void main(){
       vec3 p = position;
-      float n = sin(p.x*1.8 + uTime*0.6) * cos(p.y*1.6 - uTime*0.4) * 0.035;
+      float n = sin(p.x*1.8 + uTime*0.6) * cos(p.y*1.6 - uTime*0.4) * 0.028;
       p += normal * n;
       vec4 mv = modelViewMatrix * vec4(p, 1.0);
       vN = normalize(normalMatrix * normal);
@@ -738,93 +725,76 @@ const orbMat = new THREE.ShaderMaterial({
     }
   `,
   fragmentShader: `
-    varying vec3 vN;
-    varying vec3 vV;
-    varying vec3 vP;
-    uniform vec3 uColorCore;
-    uniform vec3 uColorEdge;
-    uniform float uPower;
-    uniform float uTime;
+    varying vec3 vN; varying vec3 vV; varying vec3 vP;
+    uniform vec3 uColorCore; uniform vec3 uColorEdge;
+    uniform float uPower; uniform float uTime; uniform float uAlpha;
     void main(){
       float f = 1.0 - max(dot(vN, vV), 0.0);
       float fe = pow(f, uPower);
-      float shimmer = 0.25 + 0.25 * sin(vP.y*6.0 + uTime*1.2);
-      vec3 col = mix(uColorCore * 0.25, uColorEdge, fe);
-      col += uColorEdge * shimmer * fe * 0.6;
-      float a = fe * 0.9 + 0.05;
+      float sh = 0.25 + 0.25 * sin(vP.y*6.0 + uTime*1.2);
+      vec3 col = mix(uColorCore * 0.22, uColorEdge, fe);
+      col += uColorEdge * sh * fe * 0.55;
+      float a = (fe * 0.9 + 0.04) * uAlpha;
       gl_FragColor = vec4(col, a);
     }
   `,
 });
-const orb = new THREE.Mesh(orbGeo, orbMat);
+const orb = new THREE.Mesh(new THREE.SphereGeometry(1.5, 128, 128), orbMat);
 orbGroup.add(orb);
 
-/* Inner core for richer depth */
 const coreMat = new THREE.ShaderMaterial({
-  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-  uniforms: { uTime: { value: 0 }, uColor: { value: C_BLUE.clone() } },
+  transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+  uniforms: { uTime: { value:0 }, uColor: { value: C_BLUE.clone() }, uAlpha: { value:1 } },
   vertexShader: `varying vec3 vN; varying vec3 vV;
     void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0); vN=normalize(normalMatrix*normal); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
-  fragmentShader: `varying vec3 vN; varying vec3 vV; uniform vec3 uColor; uniform float uTime;
-    void main(){ float f=1.0-max(dot(vN,vV),0.0); f=pow(f,3.5); vec3 c=uColor*(0.6+0.4*sin(uTime*0.8)); gl_FragColor=vec4(c*f, f*0.7); }`
+  fragmentShader: `varying vec3 vN; varying vec3 vV; uniform vec3 uColor; uniform float uTime; uniform float uAlpha;
+    void main(){ float f=1.0-max(dot(vN,vV),0.0); f=pow(f,3.2); vec3 c=uColor*(0.55+0.45*sin(uTime*0.8)); gl_FragColor=vec4(c*f, f*0.7*uAlpha); }`
 });
-const core = new THREE.Mesh(new THREE.SphereGeometry(1.05, 96, 96), coreMat);
+const core = new THREE.Mesh(new THREE.SphereGeometry(0.98, 96, 96), coreMat);
 orbGroup.add(core);
 
-/* Energy ring */
 const ring = new THREE.Mesh(
-  new THREE.TorusGeometry(2.1, 0.012, 16, 220),
-  new THREE.MeshBasicMaterial({ color: 0xa7c9ff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite:false })
+  new THREE.TorusGeometry(2.0, 0.009, 16, 260),
+  new THREE.MeshBasicMaterial({ color: 0xc7dcff, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite:false })
 );
 ring.rotation.x = Math.PI * 0.5;
 orbGroup.add(ring);
-
 const ring2 = new THREE.Mesh(
-  new THREE.TorusGeometry(2.45, 0.006, 12, 200),
-  new THREE.MeshBasicMaterial({ color: 0x8ab4ff, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite:false })
+  new THREE.TorusGeometry(2.35, 0.005, 12, 220),
+  new THREE.MeshBasicMaterial({ color: 0x9ab4ff, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite:false })
 );
 ring2.rotation.x = Math.PI * 0.5;
-ring2.rotation.z = 0.2;
+ring2.rotation.z = 0.22;
 orbGroup.add(ring2);
 
-/* =======================
-   Orbiting grade chip cards (hero)
-   ======================= */
+/* Hero grade-chip textures */
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath(); ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
 function makeChipTexture(label, value, accent) {
-  const w = 512, h = 320;
-  const c = document.createElement('canvas');
-  c.width = w; c.height = h;
+  const w = 640, h = 400;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d');
-  // bg
   const g = ctx.createLinearGradient(0,0,0,h);
-  g.addColorStop(0, 'rgba(22,30,52,0.96)');
-  g.addColorStop(1, 'rgba(12,18,36,0.96)');
-  ctx.fillStyle = g;
-  roundRect(ctx, 0, 0, w, h, 28); ctx.fill();
-  // border
-  ctx.strokeStyle = 'rgba(140,180,255,0.25)';
-  ctx.lineWidth = 2;
-  roundRect(ctx, 1, 1, w-2, h-2, 28); ctx.stroke();
-  // accent dot
-  ctx.fillStyle = accent;
-  ctx.beginPath(); ctx.arc(36, 40, 7, 0, Math.PI*2); ctx.fill();
-  // label
-  ctx.fillStyle = 'rgba(210,224,255,0.75)';
-  ctx.font = '500 22px Geist, sans-serif';
-  ctx.fillText(label, 58, 48);
-  // value
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '600 150px Geist, sans-serif';
-  ctx.fillText(value, 36, 210);
-  // sub
-  ctx.fillStyle = 'rgba(160,180,220,0.7)';
-  ctx.font = '500 20px Geist, sans-serif';
-  ctx.fillText('live', w - 88, 48);
-  // bar
-  ctx.fillStyle = 'rgba(140,180,255,0.18)';
-  roundRect(ctx, 36, 252, w-72, 6, 3); ctx.fill();
-  ctx.fillStyle = accent;
-  roundRect(ctx, 36, 252, (w-72)*0.82, 6, 3); ctx.fill();
+  g.addColorStop(0, 'rgba(22,30,52,0.97)');
+  g.addColorStop(1, 'rgba(12,18,36,0.97)');
+  ctx.fillStyle = g; roundRect(ctx, 0, 0, w, h, 34); ctx.fill();
+  ctx.strokeStyle = 'rgba(140,180,255,0.28)'; ctx.lineWidth = 2.5;
+  roundRect(ctx, 1.25, 1.25, w-2.5, h-2.5, 34); ctx.stroke();
+  ctx.fillStyle = accent; ctx.beginPath(); ctx.arc(46, 48, 9, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(210,224,255,0.78)'; ctx.font = '500 26px Geist, sans-serif';
+  ctx.fillText(label, 72, 58);
+  ctx.fillStyle = '#ffffff'; ctx.font = '600 190px Geist, sans-serif';
+  ctx.fillText(value, 42, 268);
+  ctx.fillStyle = 'rgba(160,180,220,0.75)'; ctx.font = '500 24px Geist, sans-serif';
+  ctx.fillText('live', w - 104, 58);
+  ctx.fillStyle = 'rgba(140,180,255,0.18)'; roundRect(ctx, 46, 318, w-92, 8, 4); ctx.fill();
+  ctx.fillStyle = accent; roundRect(ctx, 46, 318, (w-92)*0.82, 8, 4); ctx.fill();
   const tex = new THREE.CanvasTexture(c);
   tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -833,313 +803,534 @@ function makeChipTexture(label, value, accent) {
   tex.generateMipmaps = true;
   return tex;
 }
-function roundRect(ctx, x, y, w, h, r){
-  ctx.beginPath();
-  ctx.moveTo(x+r, y);
-  ctx.arcTo(x+w, y, x+w, y+h, r);
-  ctx.arcTo(x+w, y+h, x, y+h, r);
-  ctx.arcTo(x, y+h, x, y, r);
-  ctx.arcTo(x, y, x+w, y, r);
-  ctx.closePath();
-}
-
 const chipData = [
-  { label: 'AP Calc BC', value: '97',  accent: '#5C94F2' },
-  { label: 'AP Lit',     value: '93',  accent: '#5C94F2' },
-  { label: 'Physics',    value: '89',  accent: '#60D096' },
-  { label: 'History',    value: '95',  accent: '#60D096' },
-  { label: 'Spanish 4',  value: '91',  accent: '#5C94F2' },
+  { label: 'AP Calc BC', value: '97', accent: '#5C94F2' },
+  { label: 'AP Lit',     value: '93', accent: '#5C94F2' },
+  { label: 'Physics',    value: '89', accent: '#60D096' },
+  { label: 'History',    value: '95', accent: '#60D096' },
+  { label: 'Spanish 4',  value: '91', accent: '#5C94F2' },
 ];
 const chipsGroup = new THREE.Group();
 const chips = [];
 chipData.forEach((d, i) => {
   const tex = makeChipTexture(d.label, d.value, d.accent);
   const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite:false });
-  const geo = new THREE.PlaneGeometry(0.9, 0.56);
-  const m = new THREE.Mesh(geo, mat);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.6), mat);
   m.userData = {
     baseAngle: (i / chipData.length) * Math.PI * 2,
-    radius: 4.8 + (i%2)*0.4,
-    yBase: -1.6 + (Math.random()-0.5)*0.5,
-    zOffset: -1.2 + (Math.random()-0.5)*0.8,
-    speed: 0.12 + Math.random()*0.04,
+    radius: 4.6 + (i%2)*0.4,
+    yBase: -1.4 + (Math.random()-0.5)*0.5,
+    zOffset: -1.0 + (Math.random()-0.5)*0.6,
+    speed: 0.10 + Math.random()*0.04,
   };
-  chipsGroup.add(m);
-  chips.push(m);
+  chipsGroup.add(m); chips.push(m);
 });
 scene.add(chipsGroup);
 
-/* =======================
-   Act 2: Big grade card + particle streams
-   ======================= */
-const bigCardGroup = new THREE.Group();
-const bigTex = makeChipTexture('AP Calc BC', '97', '#5C94F2');
-const bigCard = new THREE.Mesh(
-  new THREE.PlaneGeometry(2.6, 1.62),
-  new THREE.MeshBasicMaterial({ map: bigTex, transparent: true, depthWrite:false })
-);
-bigCard.position.set(3.2, 0, 0);
-bigCardGroup.add(bigCard);
+/* ==========================================================
+   SYNC (Act 1): WIRES + SIGNAL PACKETS
+   ========================================================== */
+const wiresGroup = new THREE.Group();
+scene.add(wiresGroup);
 
-/* Subtle glow plane behind card */
+/* big grade card on the right */
+const cardPos = new THREE.Vector3(3.6, 0, 0);
+const bigCard = new THREE.Mesh(
+  new THREE.PlaneGeometry(2.55, 1.6),
+  new THREE.MeshBasicMaterial({ map: makeChipTexture('AP Calc BC', '97', '#5C94F2'), transparent: true, depthWrite:false })
+);
+bigCard.position.copy(cardPos);
+wiresGroup.add(bigCard);
+
 const cardGlow = new THREE.Mesh(
-  new THREE.PlaneGeometry(4.0, 2.8),
+  new THREE.PlaneGeometry(4.4, 3.0),
   new THREE.ShaderMaterial({
     transparent:true, depthWrite:false, blending: THREE.AdditiveBlending,
-    uniforms:{ uColor:{ value: C_BLUE.clone() } },
+    uniforms:{ uColor:{ value: C_BLUE.clone() }, uAlpha:{ value: 0 } },
     vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
-    fragmentShader:`varying vec2 vUv; uniform vec3 uColor; void main(){ vec2 p=vUv-0.5; float d=length(p); float a=smoothstep(0.55,0.0,d); gl_FragColor=vec4(uColor*a, a*0.45); }`
+    fragmentShader:`varying vec2 vUv; uniform vec3 uColor; uniform float uAlpha;
+      void main(){ vec2 p=vUv-0.5; float d=length(p); float a=smoothstep(0.55,0.0,d); gl_FragColor=vec4(uColor*a, a*0.45*uAlpha); }`
   })
 );
-cardGlow.position.set(3.2, 0, -0.02);
-bigCardGroup.add(cardGlow);
-scene.add(bigCardGroup);
-bigCardGroup.visible = false;
+cardGlow.position.set(cardPos.x, 0, -0.02);
+wiresGroup.add(cardGlow);
 
-/* Particle streams into card */
-const STREAM = 500;
-const streamGeo = new THREE.BufferGeometry();
-const sPos = new Float32Array(STREAM*3);
-const sSeed = new Float32Array(STREAM);
-const sSide = new Float32Array(STREAM);
-for (let i=0;i<STREAM;i++){
-  sPos[i*3]=0; sPos[i*3+1]=0; sPos[i*3+2]=0;
-  sSeed[i]=Math.random();
-  sSide[i]= Math.random()<0.5 ? -1 : 1;
-}
-streamGeo.setAttribute('position', new THREE.BufferAttribute(sPos,3));
-streamGeo.setAttribute('aSeed', new THREE.BufferAttribute(sSeed,1));
-streamGeo.setAttribute('aSide', new THREE.BufferAttribute(sSide,1));
-const streamMat = new THREE.ShaderMaterial({
-  transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
-  uniforms:{
-    uTime:{ value:0 },
-    uPixelRatio:{ value: renderer.getPixelRatio() },
-    uColor:{ value: C_BLUE.clone().multiplyScalar(0.75) },
-    uTarget:{ value: new THREE.Vector3(3.2,0,0) },
-    uAlpha:{ value: 0 },
-  },
-  vertexShader: `
-    attribute float aSeed;
-    attribute float aSide;
-    uniform float uTime;
-    uniform float uPixelRatio;
-    uniform vec3 uTarget;
-    varying float vA;
-    void main(){
-      float t = fract(uTime*0.25 + aSeed);
-      vec3 start = vec3(aSide * 9.0, (aSeed-0.5)*4.5, (aSeed-0.5)*2.0);
-      vec3 pos = mix(start, uTarget, t);
-      // arc
-      pos.y += sin(t*3.14159) * (0.8 + aSeed*0.6) * aSide*0.4;
-      pos.z += sin(t*3.14159) * 0.6;
-      vA = smoothstep(0.0, 0.15, t) * (1.0 - smoothstep(0.85, 1.0, t));
-      vec4 mv = modelViewMatrix * vec4(pos,1.0);
-      gl_PointSize = (1.4 + aSeed*1.2) * uPixelRatio * (70.0/-mv.z);
-      gl_Position = projectionMatrix * mv;
-    }
-  `,
-  fragmentShader: `
-    uniform vec3 uColor;
-    uniform float uAlpha;
-    varying float vA;
-    void main(){
-      vec2 uv = gl_PointCoord - 0.5;
-      float d = length(uv);
-      float a = smoothstep(0.5, 0.0, d) * vA * uAlpha;
-      gl_FragColor = vec4(uColor, a);
-    }
-  `
-});
-const streamPts = new THREE.Points(streamGeo, streamMat);
-scene.add(streamPts);
-streamPts.visible = false;
+/* wires: CatmullRom curves from edges to card, TubeGeometry + flowing shader */
+const wireTubes = [];
+const wireSignals = [];
 
-/* =======================
-   Act 3: Predictor bars + iridescent slider
-   ======================= */
-const predGroup = new THREE.Group();
-const barLabels = ['A','B','C'];
-const barYs = [1.1, 0.0, -1.1];
-const bars = [];
-barYs.forEach((y, i) => {
-  const geom = new THREE.CylinderGeometry(0.14, 0.14, 6.2, 24, 1, true);
-  const m = new THREE.Mesh(geom, new THREE.ShaderMaterial({
-    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
-    uniforms:{
-      uTime:{ value:0 },
-      uColor:{ value: i===0 ? C_BLUE.clone() : (i===1 ? new THREE.Color('rgb(150,180,230)') : new THREE.Color('rgb(120,140,180)')) },
-      uActive:{ value: i===0 ? 1.0 : 0.35 },
-    },
-    vertexShader:`varying vec3 vN; varying vec3 vV; varying vec2 vUv;
-      void main(){ vUv=uv; vec4 mv=modelViewMatrix*vec4(position,1.0); vN=normalize(normalMatrix*normal); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
-    fragmentShader:`varying vec3 vN; varying vec3 vV; varying vec2 vUv;
-      uniform vec3 uColor; uniform float uTime; uniform float uActive;
-      void main(){
-        float f = 1.0 - max(dot(vN,vV),0.0);
-        f = pow(f, 1.8);
-        float shimmer = 0.5 + 0.5*sin(vUv.x*20.0 - uTime*2.0);
-        vec3 c = uColor * (0.7 + 0.6*shimmer);
-        float a = f * (0.25 + uActive*0.7);
-        gl_FragColor = vec4(c, a);
-      }`
-  }));
-  m.rotation.z = Math.PI * 0.5;
-  m.position.set(0, y, 0);
-  predGroup.add(m);
-  bars.push(m);
-
-  // label sprite
-  const tc = document.createElement('canvas'); tc.width=128; tc.height=128;
-  const ctx = tc.getContext('2d');
-  ctx.fillStyle='rgba(210,224,255,0.9)';
-  ctx.font='600 72px Geist, sans-serif';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(barLabels[i], 64, 70);
-  const tex = new THREE.CanvasTexture(tc);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  const lm = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent:true, depthWrite:false }));
-  lm.scale.set(0.6,0.6,0.6);
-  lm.position.set(-3.6, y, 0);
-  predGroup.add(lm);
-});
-
-/* iridescent slider sphere (on top bar) */
-const iriMat = new THREE.MeshStandardMaterial({
-  color: 0xffffff,
-  metalness: 0.95,
-  roughness: 0.12,
-  iridescence: 1.0,
-  iridescenceIOR: 1.8,
-  iridescenceThicknessRange: [100, 800],
-  envMapIntensity: 1.0,
-});
-const slider = new THREE.Mesh(new THREE.SphereGeometry(0.26, 64, 64), iriMat);
-slider.position.set(-2.4, 1.1 + 0.26, 0);
-predGroup.add(slider);
-scene.add(predGroup);
-predGroup.visible = false;
-
-/* minimal env for iridescence */
-const pmremGenerator = new THREE.PMREMGenerator(renderer);
-const envScene = new THREE.Scene();
-envScene.background = new THREE.Color(0x0b1226);
-const envLight1 = new THREE.PointLight(0x6aa6ff, 8, 20); envLight1.position.set(3,3,3); envScene.add(envLight1);
-const envLight2 = new THREE.PointLight(0x60d096, 6, 20); envLight2.position.set(-3,-2,2); envScene.add(envLight2);
-const envTex = pmremGenerator.fromScene(envScene, 0.04).texture;
-scene.environment = envTex;
-
-/* =======================
-   Act 4: Concentric pulse rings + glowing dot
-   ======================= */
-const pulseGroup = new THREE.Group();
-const pulseRings = [];
-for (let i=0;i<4;i++){
-  const m = new THREE.Mesh(
-    new THREE.RingGeometry(0.9 + i*0.55, 0.94 + i*0.55, 180),
-    new THREE.MeshBasicMaterial({ color: 0xa7c9ff, transparent:true, opacity:0.55, side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false })
+function buildWire(fromX, fromY, colorHex, seed) {
+  const start = new THREE.Vector3(fromX, fromY, 0);
+  const mid = new THREE.Vector3(
+    (fromX + cardPos.x) * 0.5 + (Math.random()-0.5) * 0.8,
+    (fromY + cardPos.y) * 0.5 + (Math.random()-0.5) * 1.2,
+    Math.random() * 1.8 - 0.4
   );
-  m.userData.base = 0.9 + i*0.55;
-  m.userData.phase = i * 0.5;
-  pulseGroup.add(m);
-  pulseRings.push(m);
+  const end = cardPos.clone().add(new THREE.Vector3((Math.random()-0.5)*0.4, (Math.random()-0.5)*0.8, (Math.random()-0.5)*0.3));
+  const curve = new THREE.CatmullRomCurve3([start, mid, end], false, 'catmullrom', 0.5);
+  const geo = new THREE.TubeGeometry(curve, 180, 0.018, 10, false);
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: {
+      uTime: { value: 0 },
+      uColor: { value: new THREE.Color(colorHex) },
+      uAlpha: { value: 0 },
+      uFlow: { value: 0 },
+      uSeed: { value: seed },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main(){
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform float uTime;
+      uniform float uAlpha;
+      uniform float uFlow;
+      uniform float uSeed;
+      uniform vec3 uColor;
+      void main(){
+        float base = 0.18;
+        float t = uTime * (0.8 + uSeed*0.3);
+        float stripe = 0.5 + 0.5 * sin((vUv.x * 26.0) - t * 4.0);
+        stripe = pow(stripe, 5.0);
+        float head = smoothstep(0.0, 0.08, vUv.x) * (1.0 - smoothstep(0.92, 1.0, vUv.x));
+        vec3 col = uColor * (base + stripe * 1.7 * uFlow);
+        float a = (base + stripe * 0.9) * head * uAlpha;
+        gl_FragColor = vec4(col, a);
+      }
+    `,
+  });
+  const tube = new THREE.Mesh(geo, mat);
+  wiresGroup.add(tube);
+  wireTubes.push({ mesh: tube, curve });
+
+  /* signal packets that travel along the curve */
+  const pkgCount = 3;
+  for (let i = 0; i < pkgCount; i++) {
+    const sig = new THREE.Mesh(
+      new THREE.SphereGeometry(0.05, 24, 24),
+      new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    wiresGroup.add(sig);
+    const glow = new THREE.Mesh(
+      new THREE.SphereGeometry(0.18, 24, 24),
+      new THREE.ShaderMaterial({
+        transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+        uniforms:{ uColor:{ value: new THREE.Color(colorHex) }, uAlpha:{ value: 0 } },
+        vertexShader:`varying vec3 vN; varying vec3 vV;
+          void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0); vN=normalize(normalMatrix*normal); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
+        fragmentShader:`varying vec3 vN; varying vec3 vV; uniform vec3 uColor; uniform float uAlpha;
+          void main(){ float f=1.0-max(dot(vN,vV),0.0); f=pow(f,2.0); gl_FragColor=vec4(uColor*f, f*uAlpha); }`
+      })
+    );
+    wiresGroup.add(glow);
+    wireSignals.push({ sig, glow, curve, offset: i / pkgCount, speed: 0.14 + Math.random()*0.06 });
+  }
+}
+
+/* 4 wires: 2 from left, 2 from right, mixing blue and green */
+buildWire(-8.5,  2.2, '#6fa6ff', 0.1);
+buildWire(-9.0, -1.8, '#60d096', 0.3);
+buildWire( 8.5,  2.6, '#8ab4ff', 0.5);
+buildWire( 9.0, -2.3, '#6adfae', 0.7);
+buildWire(-8.0,  0.4, '#6fa6ff', 0.9);
+buildWire( 8.0, -0.5, '#60d096', 1.1);
+
+/* ==========================================================
+   PREDICTOR (Act 2): 4 SLIDERS + DIGITAL FINGER
+   ========================================================== */
+const sliderGroup = new THREE.Group();
+scene.add(sliderGroup);
+
+const sliderData = [
+  { label: 'Unit 3 · Lesson 1', pos: 0.78, grade: '98%', color: '#6fa6ff' },
+  { label: 'Midterm Exam',      pos: 0.62, grade: '92%', color: '#6adfae' },
+  { label: 'AP Calc Test',      pos: 0.45, grade: '87%', color: '#6fa6ff' },
+  { label: 'Lab Report',        pos: 0.88, grade: '96%', color: '#6adfae' },
+];
+
+function makeSliderTexture(d, pos, gradeText) {
+  const w = 1024, h = 200;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  /* bg card */
+  const g = ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0, 'rgba(22,30,52,0.95)');
+  g.addColorStop(1, 'rgba(12,18,36,0.95)');
+  ctx.fillStyle = g; roundRect(ctx, 0, 0, w, h, 22); ctx.fill();
+  ctx.strokeStyle = 'rgba(140,180,255,0.22)'; ctx.lineWidth = 2;
+  roundRect(ctx, 1, 1, w-2, h-2, 22); ctx.stroke();
+
+  /* label */
+  ctx.fillStyle = 'rgba(210,224,255,0.8)';
+  ctx.font = '500 26px Geist, sans-serif';
+  ctx.fillText(d.label, 44, 46);
+
+  /* grade chip on the right */
+  const gradeW = 180;
+  const gradeX = w - gradeW - 36;
+  ctx.fillStyle = 'rgba(140,180,255,0.12)';
+  roundRect(ctx, gradeX, 16, gradeW, 48, 16); ctx.fill();
+  ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
+  roundRect(ctx, gradeX + 0.75, 16.75, gradeW - 1.5, 46.5, 16); ctx.stroke();
+  ctx.fillStyle = d.color;
+  ctx.font = '600 28px Geist, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('class grade ' + gradeText, gradeX + gradeW/2, 48);
+  ctx.textAlign = 'left';
+
+  /* slider track */
+  const trackX = 44, trackY = 118, trackW = w - 88, trackH = 10;
+  ctx.fillStyle = 'rgba(140,180,255,0.12)';
+  roundRect(ctx, trackX, trackY, trackW, trackH, 5); ctx.fill();
+
+  /* filled portion */
+  const fillW = trackW * pos;
+  const grad = ctx.createLinearGradient(trackX, 0, trackX+fillW, 0);
+  grad.addColorStop(0, d.color + '55');
+  grad.addColorStop(1, d.color);
+  ctx.fillStyle = grad;
+  roundRect(ctx, trackX, trackY, fillW, trackH, 5); ctx.fill();
+
+  /* dashed remainder marks */
+  ctx.strokeStyle = 'rgba(180,200,230,0.35)';
+  ctx.setLineDash([3, 6]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(trackX + fillW + 8, trackY + trackH/2); ctx.lineTo(trackX + trackW - 18, trackY + trackH/2); ctx.stroke();
+  ctx.setLineDash([]);
+
+  /* handle dot */
+  const hx = trackX + fillW;
+  ctx.shadowColor = d.color; ctx.shadowBlur = 22;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(hx, trackY + trackH/2, 13, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = d.color;
+  ctx.beginPath(); ctx.arc(hx, trackY + trackH/2, 7, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  /* score label under handle */
+  ctx.fillStyle = 'rgba(210,224,255,0.8)';
+  ctx.font = '500 18px Geist, sans-serif';
+  const scoreText = Math.round(pos * 100) + ' / 100';
+  const scoreW = ctx.measureText(scoreText).width;
+  ctx.fillText(scoreText, Math.max(trackX, Math.min(hx - scoreW/2, trackX + trackW - scoreW)), trackY + 42);
+
+  /* footer hint */
+  ctx.fillStyle = 'rgba(160,180,220,0.45)';
+  ctx.font = '500 13px Geist, sans-serif';
+  ctx.fillText('drag to see what you need', 44, trackY + 62);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = true;
+  return tex;
+}
+
+const sliderMeshes = [];
+const SLIDER_WIDTH = 3.8;
+const SLIDER_HEIGHT = SLIDER_WIDTH * (200 / 1024);
+sliderData.forEach((d, i) => {
+  const tex = makeSliderTexture(d, d.pos, d.grade);
+  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(SLIDER_WIDTH, SLIDER_HEIGHT), mat);
+  const totalH = sliderData.length * (SLIDER_HEIGHT + 0.18);
+  mesh.position.set(0, totalH/2 - (SLIDER_HEIGHT + 0.18) * i - SLIDER_HEIGHT/2, 0);
+  mesh.userData = {
+    data: d,
+    currentPos: d.pos,
+    targetPos: d.pos,
+    nextRetargetAt: i * 0.9 + 1.2,
+    textureCanvas: tex.image,
+    tex,
+    lastPaintAt: -1,
+  };
+  sliderGroup.add(mesh);
+  sliderMeshes.push(mesh);
+});
+
+/* digital finger (glowing ring that tracks slider handle) */
+const fingerGroup = new THREE.Group();
+sliderGroup.add(fingerGroup);
+
+const fingerOuter = new THREE.Mesh(
+  new THREE.RingGeometry(0.10, 0.13, 40),
+  new THREE.MeshBasicMaterial({ color: 0xffffff, transparent:true, opacity:0.95, blending: THREE.AdditiveBlending, depthWrite:false, side: THREE.DoubleSide })
+);
+const fingerInner = new THREE.Mesh(
+  new THREE.CircleGeometry(0.05, 32),
+  new THREE.MeshBasicMaterial({ color: 0xc7dcff, transparent:true, opacity:0.9, blending: THREE.AdditiveBlending, depthWrite:false })
+);
+const fingerHalo = new THREE.Mesh(
+  new THREE.CircleGeometry(0.22, 40),
+  new THREE.ShaderMaterial({
+    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+    uniforms:{ uColor:{ value: C_BLUE_BRIGHT.clone() }, uAlpha:{ value:1 } },
+    vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
+    fragmentShader:`varying vec2 vUv; uniform vec3 uColor; uniform float uAlpha;
+      void main(){ vec2 p=vUv-0.5; float d=length(p); float a=smoothstep(0.5,0.0,d); a=pow(a,2.0); gl_FragColor=vec4(uColor*a, a*0.7*uAlpha); }`
+  })
+);
+fingerGroup.add(fingerHalo, fingerOuter, fingerInner);
+
+/* vertical guide line (shows finger motion trace) */
+const fingerTrail = new THREE.Mesh(
+  new THREE.PlaneGeometry(0.012, 3.4),
+  new THREE.ShaderMaterial({
+    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+    uniforms:{ uAlpha:{ value:0 }, uColor:{ value: C_BLUE_BRIGHT.clone() } },
+    vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
+    fragmentShader:`varying vec2 vUv; uniform float uAlpha; uniform vec3 uColor;
+      void main(){ float a = (1.0 - abs(vUv.y - 0.5) * 2.0) * 0.35 * uAlpha; gl_FragColor=vec4(uColor*a, a); }`
+  })
+);
+sliderGroup.add(fingerTrail);
+
+/* ==========================================================
+   ALERTS (Act 3): concentric pulse rings + dot
+   ========================================================== */
+const pulseGroup = new THREE.Group();
+scene.add(pulseGroup);
+const pulseRings = [];
+for (let i = 0; i < 4; i++) {
+  const m = new THREE.Mesh(
+    new THREE.RingGeometry(0.85 + i*0.58, 0.88 + i*0.58, 220),
+    new THREE.MeshBasicMaterial({ color: 0xb7d2ff, transparent:true, opacity:0.55, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite:false })
+  );
+  m.userData.phase = i * 0.55;
+  pulseGroup.add(m); pulseRings.push(m);
 }
 const pulseDot = new THREE.Mesh(
   new THREE.SphereGeometry(0.18, 48, 48),
-  new THREE.MeshBasicMaterial({ color: 0xc7dcff })
+  new THREE.MeshBasicMaterial({ color: 0xdfebff, transparent:true, opacity:1 })
 );
 pulseGroup.add(pulseDot);
 const pulseDotGlow = new THREE.Mesh(
-  new THREE.SphereGeometry(0.5, 48, 48),
+  new THREE.SphereGeometry(0.65, 48, 48),
   new THREE.ShaderMaterial({
     transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
-    uniforms:{ uColor:{ value: C_BLUE.clone().multiplyScalar(1.4) } },
+    uniforms:{ uColor:{ value: C_BLUE_BRIGHT.clone() }, uAlpha:{ value:1 } },
     vertexShader:`varying vec3 vN; varying vec3 vV;
       void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0); vN=normalize(normalMatrix*normal); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
-    fragmentShader:`varying vec3 vN; varying vec3 vV; uniform vec3 uColor;
-      void main(){ float f=1.0-max(dot(vN,vV),0.0); f=pow(f,2.0); gl_FragColor=vec4(uColor*f, f*0.8); }`
+    fragmentShader:`varying vec3 vN; varying vec3 vV; uniform vec3 uColor; uniform float uAlpha;
+      void main(){ float f=1.0-max(dot(vN,vV),0.0); f=pow(f,2.0); gl_FragColor=vec4(uColor*f, f*0.8*uAlpha); }`
   })
 );
 pulseGroup.add(pulseDotGlow);
-scene.add(pulseGroup);
-pulseGroup.visible = false;
 
-/* =======================
-   Act 5: Two iridescent orbs + beam
-   ======================= */
-const duoGroup = new THREE.Group();
-const blueBall = new THREE.Mesh(
-  new THREE.SphereGeometry(0.95, 96, 96),
-  new THREE.MeshStandardMaterial({
-    color: 0x9ec2ff, metalness: 0.9, roughness: 0.18,
-    iridescence: 1.0, iridescenceIOR: 1.9, iridescenceThicknessRange:[120, 780],
-    envMapIntensity: 1.0,
-  })
-);
-const greenBall = new THREE.Mesh(
-  new THREE.SphereGeometry(0.95, 96, 96),
-  new THREE.MeshStandardMaterial({
-    color: 0x9fe5c1, metalness: 0.9, roughness: 0.18,
-    iridescence: 1.0, iridescenceIOR: 1.85, iridescenceThicknessRange:[150, 820],
-    envMapIntensity: 1.0,
-  })
-);
-duoGroup.add(blueBall, greenBall);
+/* ==========================================================
+   CONNECT (Act 4): two cells with squiggly fields + beam
+   ========================================================== */
+const cellsGroup = new THREE.Group();
+scene.add(cellsGroup);
 
-/* beam between them */
-const beamGeo = new THREE.CylinderGeometry(0.02, 0.02, 1, 16, 1, true);
+function buildCell(colorA, colorB) {
+  const g = new THREE.Group();
+  /* iridescent core */
+  const core = new THREE.Mesh(
+    new THREE.SphereGeometry(0.62, 96, 96),
+    new THREE.MeshStandardMaterial({
+      color: colorA, metalness: 0.85, roughness: 0.2,
+      iridescence: 1.0, iridescenceIOR: 1.85, iridescenceThicknessRange: [140, 820],
+      emissive: colorA, emissiveIntensity: 0.18,
+      transparent: true, opacity: 1,
+    })
+  );
+  g.add(core);
+
+  /* pulsating wavy membrane */
+  const membrane = new THREE.Mesh(
+    new THREE.SphereGeometry(0.88, 128, 128),
+    new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      uniforms: {
+        uTime: { value: 0 },
+        uColor: { value: new THREE.Color(colorB) },
+        uAlpha: { value: 1 },
+      },
+      vertexShader: `
+        uniform float uTime;
+        varying vec3 vN; varying vec3 vV; varying vec3 vP;
+        void main(){
+          vec3 p = position;
+          float w1 = sin(p.x*4.5 + uTime*1.6) * cos(p.y*4.0 - uTime*1.1);
+          float w2 = sin(p.z*5.0 - uTime*1.3) * 0.8;
+          float d = (w1 + w2) * 0.055;
+          p += normal * d;
+          vec4 mv = modelViewMatrix * vec4(p,1.0);
+          vN = normalize(normalMatrix * normal);
+          vV = normalize(-mv.xyz);
+          vP = p;
+          gl_Position = projectionMatrix * mv;
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vN; varying vec3 vV; varying vec3 vP;
+        uniform vec3 uColor; uniform float uAlpha; uniform float uTime;
+        void main(){
+          float f = 1.0 - max(dot(vN,vV),0.0);
+          float fe = pow(f, 2.4);
+          float pulse = 0.5 + 0.5 * sin(uTime*2.0);
+          vec3 col = uColor * (0.6 + pulse*0.6) * fe;
+          gl_FragColor = vec4(col, fe * 0.85 * uAlpha);
+        }
+      `,
+    })
+  );
+  g.add(membrane);
+
+  /* squiggly tendrils: 4 tubes orbiting the core */
+  const tendrils = [];
+  const tendrilCount = 4;
+  for (let i = 0; i < tendrilCount; i++) {
+    const pts = [];
+    const phi0 = Math.random() * Math.PI * 2;
+    const tilt = (Math.random() - 0.5) * 0.6;
+    const wobble = 0.08 + Math.random()*0.08;
+    const coils = 2 + Math.random();
+    for (let s = 0; s <= 64; s++) {
+      const t = s / 64;
+      const a = phi0 + t * Math.PI * 2 * coils;
+      const r = 1.05 + Math.sin(t * Math.PI * 6 + phi0) * wobble;
+      const x = Math.cos(a) * r;
+      const y = Math.sin(a * 0.8 + tilt) * 0.32 + Math.sin(t*Math.PI*4) * 0.08;
+      const z = Math.sin(a) * r;
+      pts.push(new THREE.Vector3(x, y, z));
+    }
+    const curve = new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.5);
+    const tube = new THREE.Mesh(
+      new THREE.TubeGeometry(curve, 220, 0.010 + Math.random()*0.004, 6, true),
+      new THREE.ShaderMaterial({
+        transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+        uniforms:{
+          uTime:{ value: 0 },
+          uColor:{ value: new THREE.Color(colorB) },
+          uAlpha:{ value: 1 },
+          uSpeed:{ value: 1.2 + Math.random()*0.6 },
+          uSeed:{ value: i * 0.37 },
+        },
+        vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
+        fragmentShader:`
+          varying vec2 vUv;
+          uniform float uTime; uniform float uAlpha; uniform float uSpeed; uniform float uSeed;
+          uniform vec3 uColor;
+          void main(){
+            float stripe = 0.5 + 0.5*sin(vUv.x*40.0 - uTime*uSpeed*4.0 + uSeed*6.28);
+            stripe = pow(stripe, 4.0);
+            float base = 0.22;
+            vec3 c = uColor * (base + stripe * 1.8);
+            float a = (base + stripe * 0.85) * uAlpha;
+            gl_FragColor = vec4(c, a);
+          }
+        `,
+      })
+    );
+    g.add(tube); tendrils.push(tube);
+  }
+
+  g.userData = { core, membrane, tendrils };
+  return g;
+}
+
+const cellBlue = buildCell('#9ec2ff', '#7fb4ff');
+const cellGreen = buildCell('#9fe5c1', '#6adfae');
+cellsGroup.add(cellBlue, cellGreen);
+
+/* beam linking the two cells */
+const beamGeo = new THREE.CylinderGeometry(0.035, 0.035, 1, 16, 1, true);
 const beamMat = new THREE.ShaderMaterial({
   transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
-  uniforms:{ uTime:{ value:0 }, uA:{ value: C_BLUE.clone() }, uB:{ value: C_GREEN.clone() } },
+  uniforms:{
+    uTime:{ value:0 },
+    uA:{ value: C_BLUE_BRIGHT.clone() },
+    uB:{ value: C_GREEN_BRIGHT.clone() },
+    uAlpha:{ value: 0 },
+  },
   vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
-  fragmentShader:`varying vec2 vUv; uniform vec3 uA; uniform vec3 uB; uniform float uTime;
-    void main(){ vec3 c=mix(uA,uB,vUv.y); float flow=0.5+0.5*sin(vUv.y*18.0 - uTime*3.0); float edge=smoothstep(0.0,0.1,vUv.x)*smoothstep(1.0,0.9,vUv.x); gl_FragColor=vec4(c*(0.6+flow*0.8), flow*edge*0.9); }`
+  fragmentShader:`
+    varying vec2 vUv;
+    uniform vec3 uA; uniform vec3 uB; uniform float uTime; uniform float uAlpha;
+    void main(){
+      vec3 c = mix(uA, uB, vUv.y);
+      float flow = 0.5 + 0.5 * sin(vUv.y * 22.0 - uTime * 3.2);
+      float edge = smoothstep(0.0, 0.25, vUv.y) * smoothstep(1.0, 0.75, vUv.y);
+      float a = (0.35 + flow * 0.7) * edge * uAlpha;
+      gl_FragColor = vec4(c * (0.6 + flow * 0.7), a);
+    }
+  `
 });
 const beam = new THREE.Mesh(beamGeo, beamMat);
-duoGroup.add(beam);
-scene.add(duoGroup);
-duoGroup.visible = false;
+cellsGroup.add(beam);
 
-/* =======================
-   Act 6: Saturn rings (CTA)
-   ======================= */
-const saturn1 = new THREE.Mesh(
-  new THREE.TorusGeometry(2.6, 0.018, 20, 260),
-  new THREE.MeshBasicMaterial({ color: 0xb9d3ff, transparent:true, opacity:0.9, blending:THREE.AdditiveBlending, depthWrite:false })
-);
-saturn1.rotation.x = Math.PI * 0.45;
-saturn1.rotation.z = 0.2;
-orbGroup.add(saturn1);
-saturn1.visible = false;
+/* ==========================================================
+   CTA (Act 5): big cinematic GYRO (multiple tilted torus rings)
+   ========================================================== */
+const gyroGroup = new THREE.Group();
+scene.add(gyroGroup);
+const gyroRings = [];
+const GYRO_COUNT = 7;
+for (let i = 0; i < GYRO_COUNT; i++) {
+  const radius = 2.8 + i * 0.75;
+  const thickness = 0.012 + Math.random() * 0.010;
+  const color = i % 2 === 0 ? C_BLUE_BRIGHT : C_BLUE;
+  const geo = new THREE.TorusGeometry(radius, thickness, 18, 300);
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: {
+      uTime: { value: 0 },
+      uColor: { value: color.clone() },
+      uAlpha: { value: 0 },
+    },
+    vertexShader: `varying vec2 vUv;
+      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);} `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform vec3 uColor;
+      uniform float uTime;
+      uniform float uAlpha;
+      void main(){
+        float stripe = 0.5 + 0.5 * sin(vUv.x * 80.0 - uTime * 1.4);
+        stripe = pow(stripe, 3.0);
+        vec3 c = uColor * (0.55 + stripe * 1.3);
+        gl_FragColor = vec4(c, (0.55 + stripe * 0.6) * uAlpha);
+      }
+    `,
+  });
+  const ring = new THREE.Mesh(geo, mat);
+  ring.rotation.x = Math.random() * Math.PI * 2;
+  ring.rotation.y = Math.random() * Math.PI * 2;
+  ring.rotation.z = Math.random() * Math.PI * 2;
+  ring.userData = {
+    vx: (Math.random() - 0.5) * 0.22,
+    vy: (Math.random() - 0.5) * 0.22,
+    vz: (Math.random() - 0.5) * 0.18,
+    baseRot: ring.rotation.clone(),
+  };
+  gyroGroup.add(ring);
+  gyroRings.push(ring);
+}
 
-const saturn2 = new THREE.Mesh(
-  new THREE.TorusGeometry(3.05, 0.01, 16, 260),
-  new THREE.MeshBasicMaterial({ color: 0x9ab4ff, transparent:true, opacity:0.7, blending:THREE.AdditiveBlending, depthWrite:false })
-);
-saturn2.rotation.x = -Math.PI * 0.35;
-saturn2.rotation.z = -0.35;
-orbGroup.add(saturn2);
-saturn2.visible = false;
-
-/* =======================
-   Post-processing: UnrealBloomPass
-   ======================= */
+/* ==========================================================
+   Post-processing: sharper bloom + vignette
+   ========================================================== */
 const composer = new EffectComposer(renderer);
-composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+composer.setPixelRatio(QUALITY_DPR);
 composer.setSize(window.innerWidth, window.innerHeight);
-const renderPass = new RenderPass(scene, camera);
-composer.addPass(renderPass);
+composer.addPass(new RenderPass(scene, camera));
 
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.55,   // strength (was 0.85)
-  0.75,   // radius
-  0.35    // threshold - higher so dim text/UI isn't bloomed
+  0.72,   // strength
+  0.32,   // radius  -> smaller = crisper
+  0.28    // threshold
 );
 composer.addPass(bloomPass);
 
-/* Light vignette + chromatic shift pass for final polish */
 const finishPass = new ShaderPass({
   uniforms: {
     tDiffuse: { value: null },
@@ -1154,251 +1345,398 @@ const finishPass = new ShaderPass({
       vec4 c = texture2D(tDiffuse, vUv);
       vec2 p = vUv - 0.5;
       float v = smoothstep(0.9, 0.2, length(p));
-      c.rgb *= mix(1.0, v, 0.35 * uVignette);
+      c.rgb *= mix(1.0, v, 0.30 * uVignette);
       gl_FragColor = c;
     }
   `
 });
 composer.addPass(finishPass);
+composer.addPass(new OutputPass());
 
-const outputPass = new OutputPass();
-composer.addPass(outputPass);
-
-/* =======================
+/* ==========================================================
    Pointer parallax
-   ======================= */
+   ========================================================== */
 const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
 window.addEventListener('pointermove', (e) => {
   pointer.tx = (e.clientX / window.innerWidth - 0.5) * 2;
   pointer.ty = (e.clientY / window.innerHeight - 0.5) * 2;
 }, { passive: true });
 
-/* =======================
-   Scroll-driven act progression (6 acts, 0..5)
-   scrub: 2 feel via GSAP on a proxy value
-   ======================= */
+/* ==========================================================
+   Scroll-driven progress (0..5 across 6 sections)
+   ========================================================== */
 const scrollProxy = { value: 0 };
 ScrollTrigger.create({
   trigger: 'main.slate-main',
   start: 'top top',
   end: 'bottom bottom',
-  scrub: 2,
-  onUpdate: self => {
-    gsap.to(scrollProxy, { value: self.progress * 5, duration: 0.1, overwrite: true });
-  }
+  scrub: 0.3,
+  onUpdate: self => { scrollProxy.value = self.progress * 5; },
 });
 
-/* =======================
+/* ==========================================================
    Resize
-   ======================= */
+   ========================================================== */
 function onResize(){
   const w = window.innerWidth, h = window.innerHeight;
   camera.aspect = w/h;
   camera.updateProjectionMatrix();
+  const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1.6), 2.5);
   renderer.setSize(w, h, false);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(dpr);
   composer.setSize(w, h);
-  composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  composer.setPixelRatio(dpr);
   bloomPass.setSize(w, h);
-  starMat.uniforms.uPixelRatio.value = renderer.getPixelRatio();
-  streamMat.uniforms.uPixelRatio.value = renderer.getPixelRatio();
+  starMat.uniforms.uPR.value = renderer.getPixelRatio();
 }
 window.addEventListener('resize', onResize);
 onResize();
 
-/* Helpers */
+/* ==========================================================
+   Helpers
+   ========================================================== */
 function smoothstep(a,b,x){ const t=Math.max(0,Math.min(1,(x-a)/(b-a))); return t*t*(3-2*t); }
-// Non-overlapping band-pass pulse with tight fades
-function band(inStart, inEnd, outStart, outEnd, x){
-  return smoothstep(inStart, inEnd, x) * (1 - smoothstep(outStart, outEnd, x));
+function actVal(center, p) {
+  // entry starts 0.8 before center, completes 0.3 before center, holds until +0.3, exits by +0.8
+  if (p < center - 0.8) return 0;
+  if (p <= center - 0.3) return smoothstep(center - 0.8, center - 0.3, p);
+  if (p <= center + 0.3) return 1;
+  if (p <= center + 0.8) return 1 - smoothstep(center + 0.3, center + 0.8, p);
+  return 0;
+}
+/* Entry progress: how far along the enter animation (0..1) */
+function enterProgress(center, p){
+  if (p < center - 0.8) return 0;
+  if (p >= center - 0.3) return 1;
+  return smoothstep(center - 0.8, center - 0.3, p);
+}
+/* Exit progress: how far along the exit animation (0..1) */
+function exitProgress(center, p){
+  if (p < center + 0.3) return 0;
+  if (p >= center + 0.8) return 1;
+  return smoothstep(center + 0.3, center + 0.8, p);
 }
 
-/* =======================
+/* Slider finger retarget timers (seconds) */
+const sliderClock = { t: 0 };
+function pickNewTarget(slider) {
+  const cur = slider.userData.currentPos;
+  let next;
+  do { next = 0.25 + Math.random() * 0.65; } while (Math.abs(next - cur) < 0.18);
+  return next;
+}
+
+/* Repaint slider texture when position changes */
+function repaintSlider(slider) {
+  const d = slider.userData.data;
+  const pos = slider.userData.currentPos;
+  // compute pseudo class grade based on pos (simple interpolation)
+  const grade = Math.round(72 + pos * 26) + '%';
+  slider.material.map.dispose();
+  slider.material.map = makeSliderTexture(d, pos, grade);
+  slider.material.needsUpdate = true;
+}
+
+/* ==========================================================
    Animate loop
-   ======================= */
+   ========================================================== */
 const clock = new THREE.Clock();
 function tick(){
-  const t = clock.getElapsedTime();
-  const p = scrollProxy.value; // 0..5
+  const dt = Math.min(clock.getDelta(), 1/20);
+  const t = clock.elapsedTime;
+  const p = scrollProxy.value;
 
-  // pointer smoothing
+  /* pointer smoothing */
   pointer.x += (pointer.tx - pointer.x) * 0.06;
   pointer.y += (pointer.ty - pointer.y) * 0.06;
 
-  // Global parallax on camera (subtle)
-  camera.position.x = pointer.x * 0.35;
-  camera.position.y = -pointer.y * 0.25;
+  /* Camera parallax */
+  camera.position.x = pointer.x * 0.45;
+  camera.position.y = -pointer.y * 0.32;
   camera.lookAt(0, 0, 0);
 
-  // Stars always rotate slowly
+  /* stars */
   stars.rotation.y = t * 0.015;
   stars.rotation.x = t * 0.008;
   starMat.uniforms.uTime.value = t;
 
-  // ---------------- ACT 0: HERO ----------------
-  // Non-overlapping bands so transitions are crisp with scrub:2
-  const a0 = 1 - smoothstep(0.45, 0.85, p);
-  const a1 = band(0.85, 1.15, 1.75, 2.05, p);
-  const a2 = band(1.85, 2.15, 2.75, 3.05, p);
-  const a3 = band(2.85, 3.15, 3.75, 4.05, p);
-  const a4 = band(3.85, 4.15, 4.55, 4.80, p);
-  const a5 = smoothstep(4.55, 4.85, p);
+  /* --- Per-act values --- */
+  const v0 = actVal(0, p); // hero
+  const v1 = actVal(1, p); // sync
+  const v2 = actVal(2, p); // predictor
+  const v3 = actVal(3, p); // alerts
+  const v4 = actVal(4, p); // connect
+  const v5 = actVal(5, p); // cta
+  const e1 = enterProgress(1, p);
+  const e2 = enterProgress(2, p);
+  const e3 = enterProgress(3, p);
+  const e4 = enterProgress(4, p);
+  const e5 = enterProgress(5, p);
+  const x1 = exitProgress(1, p);
+  const x2 = exitProgress(2, p);
+  const x3 = exitProgress(3, p);
+  const x4 = exitProgress(4, p);
 
-  // Orb master opacity: visible in hero and CTA
-  const orbOpacity = Math.max(a0, a5);
+  /* ===================== HERO ORB (act 0) ===================== */
+  const orbVisibility = Math.max(v0, v5);
   orb.material.uniforms.uTime.value = t;
   core.material.uniforms.uTime.value = t;
-  orb.material.opacity = orbOpacity;
-  core.material.opacity = orbOpacity;
-  orb.material.visible = orbOpacity > 0.01;
-  core.material.visible = orbOpacity > 0.01;
-  ring.material.opacity = 0.9 * orbOpacity;
-  ring2.material.opacity = 0.55 * orbOpacity;
-  ring.visible = ring2.visible = orbOpacity > 0.01;
 
-  // Orb position: hero (lower so text clears), fully offscreen during middle, CTA center + larger
-  const middle = Math.min(1, Math.max(a1, a2, a3, a4));
-  const nonMid = Math.max(a0, a5);
-  const heroY = -2.15;
-  const ctaY = -2.6;
-  const restY = THREE.MathUtils.lerp(heroY, ctaY, a5);
-  const heroZ = 0;
-  const ctaZ = -1.0;
-  const restZ = THREE.MathUtils.lerp(heroZ, ctaZ, a5);
-  orbGroup.position.x = THREE.MathUtils.lerp(0, -12, middle);
-  orbGroup.position.y = THREE.MathUtils.lerp(restY, 0.6, middle);
-  orbGroup.position.z = THREE.MathUtils.lerp(restZ, 0, middle);
-  const restScale = THREE.MathUtils.lerp(0.62, 0.7, a5);
-  orbGroup.scale.setScalar(THREE.MathUtils.lerp(restScale, 0.4, middle));
-  orbGroup.rotation.y = t * 0.18;
-  orbGroup.rotation.x = pointer.y * 0.15;
+  /* Orb is hero (y low) and fades out entering sync; returns at CTA */
+  const heroShown = v0 * (1 - e1);
+  const ctaHidden = v5; // at CTA: orb is partially gone (gyro covers)
+  const orbShown = Math.max(heroShown, ctaHidden * 0.3);
 
-  // Ring spins continuously
+  orb.material.uniforms.uAlpha.value = orbShown;
+  core.material.uniforms.uAlpha.value = orbShown;
+  ring.material.opacity = 0.95 * orbShown;
+  ring2.material.opacity = 0.55 * orbShown;
+  orb.visible = ring.visible = ring2.visible = core.visible = orbShown > 0.005;
+
+  /* Position: hero low-center; slides left when exiting; small at CTA */
+  const heroY = -2.25, heroZ = 0;
+  orbGroup.position.set(
+    THREE.MathUtils.lerp(0, -10, e1),
+    heroY * heroShown + 0 * (1 - heroShown),
+    THREE.MathUtils.lerp(heroZ, -2.8, e1)
+  );
+  if (v5 > 0.01) {
+    orbGroup.position.set(0, -2.8, -2.5);
+  }
+  orbGroup.scale.setScalar(
+    v5 > 0.3
+      ? THREE.MathUtils.lerp(0.5, 0.4, v5)
+      : THREE.MathUtils.lerp(0.62, 0.2, e1)
+  );
+  orbGroup.rotation.y = t * 0.16;
+  orbGroup.rotation.x = pointer.y * 0.12;
   ring.rotation.z = t * 0.6;
   ring2.rotation.z = -t * 0.4;
 
-  // Hero chips orbit
-  chipsGroup.visible = a0 > 0.01;
+  /* chips follow orb in hero */
+  chipsGroup.visible = heroShown > 0.01;
   chipsGroup.position.copy(orbGroup.position);
-  chipsGroup.rotation.y = t * 0.18;
   chips.forEach((m, i) => {
     const u = m.userData;
-    const ang = u.baseAngle + t * u.speed;
-    m.position.x = Math.cos(ang) * u.radius;
-    m.position.z = Math.sin(ang) * u.radius + u.zOffset;
+    const a = u.baseAngle + t * u.speed;
+    m.position.x = Math.cos(a) * u.radius;
+    m.position.z = Math.sin(a) * u.radius + u.zOffset;
     m.position.y = u.yBase + Math.sin(t*0.8 + i)*0.12;
     m.lookAt(camera.position);
-    m.material.opacity = a0 * 0.9;
+    m.material.opacity = heroShown;
     m.material.transparent = true;
   });
 
-  // Saturn rings for CTA
-  saturn1.visible = a5 > 0.01;
-  saturn2.visible = a5 > 0.01;
-  saturn1.material.opacity = a5 * 0.9;
-  saturn2.material.opacity = a5 * 0.7;
-  saturn1.rotation.z = t * 0.35;
-  saturn2.rotation.z = -t * 0.28;
+  /* ===================== SYNC WIRES (act 1) ===================== */
+  /* Pre-tease: start entering at hero end (e1 begins at p=0.2) */
+  wiresGroup.visible = (v1 + (e1 * (1 - x1))) > 0.005;
+  const wireIn = Math.min(1, e1);       // 0..1 as entering
+  const wireOut = x1;                   // 0..1 as exiting
 
-  // ---------------- ACT 1: LIVE SYNC ----------------
-  bigCardGroup.visible = a1 > 0.02;
-  streamPts.visible = a1 > 0.02;
-  bigCard.material.opacity = a1;
-  cardGlow.material.opacity = a1;
-  streamMat.uniforms.uAlpha.value = a1;
-  const bx = THREE.MathUtils.lerp(7.5, 3.2, a1);
-  bigCardGroup.position.x = bx;
-  bigCardGroup.position.y = pointer.y * -0.15;
-  bigCardGroup.rotation.y = (pointer.x * -0.15) + Math.sin(t*0.3) * 0.04;
-  bigCardGroup.rotation.x = pointer.y * 0.1;
-  streamMat.uniforms.uTime.value = t;
-  streamMat.uniforms.uTarget.value.set(bx, 0, 0);
+  /* big card enters from the right */
+  const cardX = THREE.MathUtils.lerp(8, 3.6, wireIn) - wireOut * 6.5;
+  bigCard.position.x = cardX;
+  cardGlow.position.x = cardX;
+  bigCard.material.opacity = wireIn * (1 - wireOut);
+  cardGlow.material.uniforms.uAlpha.value = wireIn * (1 - wireOut);
 
-  // ---------------- ACT 2: PREDICTOR (text RIGHT, 3D LEFT) ----------------
-  predGroup.visible = a2 > 0.02;
-  predGroup.position.x = THREE.MathUtils.lerp(-8, -2.6, a2);
-  predGroup.position.y = pointer.y * -0.1;
-  predGroup.rotation.y = pointer.x * 0.12;
-  bars.forEach((b, i) => {
-    b.material.uniforms.uTime.value = t;
-    b.material.uniforms.uActive.value = (i===0 ? 1.0 : 0.35) * a2;
+  /* wires fade in early (so they tease into frame from previous section) */
+  const wireAlpha = smoothstep(0.0, 0.55, wireIn) * (1 - wireOut);
+  wireTubes.forEach((w, i) => {
+    w.mesh.material.uniforms.uTime.value = t;
+    w.mesh.material.uniforms.uAlpha.value = wireAlpha;
+    w.mesh.material.uniforms.uFlow.value = smoothstep(0.2, 0.8, wireIn);
   });
-  const sx = Math.sin(t*0.6) * 2.4;
-  slider.position.set(sx, 1.1 + 0.26, 0);
-  slider.rotation.y = t * 0.8;
-  slider.material.transparent = true;
-  slider.material.opacity = a2;
-  slider.material.envMapIntensity = 1.2;
 
-  // ---------------- ACT 3: ALERTS (text LEFT, 3D RIGHT) ----------------
-  pulseGroup.visible = a3 > 0.02;
-  pulseGroup.position.x = THREE.MathUtils.lerp(8, 3.0, a3);
-  pulseGroup.position.y = pointer.y * -0.1;
+  /* signal packets travel along their curves */
+  wireSignals.forEach((s, i) => {
+    const tt = (t * s.speed + s.offset) % 1;
+    const pt = s.curve.getPoint(tt);
+    s.sig.position.copy(pt);
+    s.glow.position.copy(pt);
+    const a = wireAlpha * (1 - Math.pow(tt - 0.5, 2) * 1.8); // brighten at middle
+    s.sig.material.opacity = Math.max(0, a);
+    s.glow.material.uniforms.uAlpha.value = Math.max(0, a);
+  });
+
+  /* card gentle float */
+  bigCard.rotation.y = Math.sin(t*0.35) * 0.06 + pointer.x * -0.1;
+  bigCard.rotation.x = pointer.y * 0.08;
+
+  /* ===================== PREDICTOR SLIDERS (act 2) ===================== */
+  const predIn = e2;
+  const predOut = x2;
+  const predShown = (v2 + predIn * (1 - predOut)) > 0.005;
+  sliderGroup.visible = predShown;
+  /* slide in from the left: x goes from -10 to -3.2 */
+  sliderGroup.position.x = THREE.MathUtils.lerp(-12, -3.4, predIn) + predOut * 10;
+  sliderGroup.position.y = pointer.y * -0.08;
+  sliderGroup.rotation.y = pointer.x * 0.1;
+
+  /* material opacities for sliders */
+  const predAlpha = smoothstep(0.0, 0.6, predIn) * (1 - predOut);
+  sliderMeshes.forEach(s => { s.material.opacity = predAlpha; s.material.transparent = true; });
+
+  /* update slider positions (finger-driven) when predictor is active */
+  if (predIn > 0.2 && predOut < 0.8) {
+    sliderClock.t += dt;
+    sliderMeshes.forEach((s, i) => {
+      const ud = s.userData;
+      if (sliderClock.t > ud.nextRetargetAt) {
+        ud.targetPos = pickNewTarget(s);
+        ud.nextRetargetAt = sliderClock.t + 1.6 + Math.random() * 1.2;
+      }
+      const prev = ud.currentPos;
+      ud.currentPos += (ud.targetPos - ud.currentPos) * Math.min(1, dt * 2.2);
+      if (Math.abs(ud.currentPos - prev) > 0.006 || Math.abs(ud.currentPos - ud.lastPaintAt) > 0.02) {
+        repaintSlider(s);
+        ud.lastPaintAt = ud.currentPos;
+      }
+    });
+  }
+
+  /* Digital finger: picks one slider, animates to its handle */
+  if (predShown) {
+    const whichSlider = Math.floor((sliderClock.t * 0.25) % sliderMeshes.length);
+    const target = sliderMeshes[whichSlider];
+    if (target) {
+      const handleXLocal = -SLIDER_WIDTH/2 + target.userData.currentPos * SLIDER_WIDTH;
+      const fx = target.position.x + handleXLocal;
+      const fy = target.position.y + 0.02;
+      fingerGroup.position.x += (fx - fingerGroup.position.x) * Math.min(1, dt * 6);
+      fingerGroup.position.y += (fy - fingerGroup.position.y) * Math.min(1, dt * 5);
+      fingerGroup.position.z = 0.06;
+      /* pulse finger */
+      const pulse = 1 + 0.14 * Math.sin(t * 3.2);
+      fingerOuter.scale.setScalar(pulse);
+      fingerHalo.scale.setScalar(pulse * 1.1);
+      fingerOuter.material.opacity = 0.9 * predAlpha;
+      fingerInner.material.opacity = 0.9 * predAlpha;
+      fingerHalo.material.uniforms.uAlpha.value = predAlpha;
+      /* trail line aligns with finger column */
+      fingerTrail.position.x = fingerGroup.position.x;
+      fingerTrail.position.y = 0;
+      fingerTrail.material.uniforms.uAlpha.value = predAlpha * 0.9;
+    }
+  }
+
+  /* ===================== ALERTS PULSE (act 3) ===================== */
+  const alertsIn = e3;
+  const alertsOut = x3;
+  const alertsShown = (v3 + alertsIn * (1 - alertsOut)) > 0.005;
+  pulseGroup.visible = alertsShown;
+  /* slide in from the right, fully settled before text hits center */
+  pulseGroup.position.x = THREE.MathUtils.lerp(9.5, 3.4, alertsIn) + alertsOut * 8;
+  pulseGroup.position.y = THREE.MathUtils.lerp(-1.5, 0, alertsIn) + pointer.y * -0.08;
+  pulseGroup.rotation.z = (1 - alertsIn) * 0.6;
+
+  const alertsAlpha = smoothstep(0.0, 0.6, alertsIn) * (1 - alertsOut);
+
   pulseRings.forEach((r, i) => {
-    const s = 1 + Math.sin(t*1.4 + r.userData.phase) * 0.28;
+    const s = 1 + Math.sin(t*1.5 + r.userData.phase) * 0.28;
     r.scale.setScalar(s);
-    r.material.opacity = a3 * (0.65 - i*0.08) * (0.6 + 0.4*Math.sin(t*1.4 + r.userData.phase));
-    r.rotation.z = t * 0.1 * (i%2===0 ? 1 : -1);
+    r.material.opacity = alertsAlpha * (0.7 - i * 0.09) * (0.55 + 0.45*Math.sin(t*1.5 + r.userData.phase));
+    r.rotation.z = t * 0.08 * (i%2===0 ? 1 : -1);
   });
   pulseDot.material.transparent = true;
-  pulseDot.material.opacity = a3;
+  pulseDot.material.opacity = alertsAlpha;
   pulseDot.scale.setScalar(1 + Math.sin(t*3.0)*0.08);
-  pulseDotGlow.material.opacity = a3;
+  pulseDotGlow.material.uniforms.uAlpha.value = alertsAlpha;
   pulseDotGlow.scale.setScalar(1 + Math.sin(t*3.0)*0.12);
 
-  // ---------------- ACT 4: CANVAS + IC (text RIGHT, 3D LEFT) ----------------
-  duoGroup.visible = a4 > 0.02;
-  duoGroup.position.x = THREE.MathUtils.lerp(-8, -2.6, a4);
-  duoGroup.position.y = pointer.y * -0.1;
-  duoGroup.rotation.y = pointer.x * 0.1;
-  const orbitR = 1.7;
-  const oa = t * 0.6;
-  blueBall.position.set(Math.cos(oa)*orbitR, Math.sin(oa)*0.5, Math.sin(oa)*orbitR);
-  greenBall.position.set(Math.cos(oa+Math.PI)*orbitR, Math.sin(oa+Math.PI)*0.5, Math.sin(oa+Math.PI)*orbitR);
-  blueBall.rotation.y = t * 0.4;
-  greenBall.rotation.y = -t * 0.4;
-  // beam between
-  const mid = new THREE.Vector3().addVectors(blueBall.position, greenBall.position).multiplyScalar(0.5);
-  const dir = new THREE.Vector3().subVectors(greenBall.position, blueBall.position);
+  /* ===================== CONNECT CELLS (act 4) ===================== */
+  const connIn = e4;
+  const connOut = x4;
+  const connShown = (v4 + connIn * (1 - connOut)) > 0.005;
+  cellsGroup.visible = connShown;
+
+  /* Cells positioned on the LEFT side of viewport (text is right) */
+  cellsGroup.position.x = THREE.MathUtils.lerp(-12, -3.2, connIn) + connOut * 8;
+  cellsGroup.position.y = pointer.y * -0.08;
+  cellsGroup.rotation.y = pointer.x * 0.1;
+
+  /* Orbit radius: start far apart, come together mid-section, break apart at exit */
+  const orbitR = THREE.MathUtils.lerp(3.2, 1.2, connIn) * (1 - connOut) + connOut * 4.5;
+  const orbitSpeed = 0.35;
+  const a = t * orbitSpeed;
+  cellBlue.position.set(Math.cos(a) * orbitR, Math.sin(a) * 0.45, Math.sin(a) * orbitR * 0.6);
+  cellGreen.position.set(Math.cos(a + Math.PI) * orbitR, Math.sin(a + Math.PI) * 0.45, Math.sin(a + Math.PI) * orbitR * 0.6);
+  cellBlue.rotation.y = t * 0.4;
+  cellGreen.rotation.y = -t * 0.4;
+
+  /* cell alpha + animation */
+  const cellAlpha = smoothstep(0.0, 0.55, connIn) * (1 - connOut);
+  [cellBlue, cellGreen].forEach(cell => {
+    cell.userData.membrane.material.uniforms.uTime.value = t;
+    cell.userData.membrane.material.uniforms.uAlpha.value = cellAlpha;
+    cell.userData.tendrils.forEach(td => {
+      td.material.uniforms.uTime.value = t;
+      td.material.uniforms.uAlpha.value = cellAlpha * 0.9;
+    });
+    cell.userData.core.material.opacity = cellAlpha;
+    cell.userData.core.material.transparent = true;
+  });
+
+  /* pulsating scale */
+  const cellPulseBlue = 1 + Math.sin(t*1.4) * 0.06;
+  const cellPulseGreen = 1 + Math.sin(t*1.4 + Math.PI) * 0.06;
+  cellBlue.scale.setScalar(cellPulseBlue);
+  cellGreen.scale.setScalar(cellPulseGreen);
+
+  /* beam: visible when cells are close (during mid-section), invisible when far apart */
+  const proximity = 1 - smoothstep(1.0, 3.0, orbitR);
+  const beamAlpha = proximity * cellAlpha;
+  const mid = new THREE.Vector3().addVectors(cellBlue.position, cellGreen.position).multiplyScalar(0.5);
+  const dir = new THREE.Vector3().subVectors(cellGreen.position, cellBlue.position);
   const len = dir.length();
   beam.position.copy(mid);
-  beam.scale.set(1, len, 1);
+  beam.scale.set(1, Math.max(len - 1.1, 0.001), 1);
   beam.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().normalize());
   beamMat.uniforms.uTime.value = t;
-  // fade materials properly
-  blueBall.material.transparent = true;
-  greenBall.material.transparent = true;
-  blueBall.material.opacity = a4;
-  greenBall.material.opacity = a4;
-  beamMat.uniforms.uA.value.setRGB(C_BLUE.r * a4, C_BLUE.g * a4, C_BLUE.b * a4);
-  beamMat.uniforms.uB.value.setRGB(C_GREEN.r * a4, C_GREEN.g * a4, C_GREEN.b * a4);
-  duoGroup.scale.setScalar(0.7 + 0.3*a4);
+  beamMat.uniforms.uAlpha.value = beamAlpha;
+  beam.visible = beamAlpha > 0.01;
 
-  // ---------------- Bloom intensity breathes per act ----------------
-  const bloomTarget = 0.6 + 0.35*Math.max(a0, a5) + 0.25*(a1+a2+a3+a4);
-  bloomPass.strength += (bloomTarget - bloomPass.strength) * 0.06;
+  /* ===================== CTA GYRO (act 5) ===================== */
+  const ctaIn = e5;
+  const ctaShown = v5 + ctaIn > 0.005;
+  gyroGroup.visible = ctaShown;
+  gyroGroup.position.x = pointer.x * 0.18;
+  gyroGroup.position.y = pointer.y * -0.14;
+  gyroGroup.position.z = -1.5 + (1 - ctaIn) * -3.0;
+
+  /* scale: enters growing from small */
+  const gyroScale = THREE.MathUtils.lerp(0.35, 1.0, ctaIn);
+  gyroGroup.scale.setScalar(gyroScale);
+
+  const gyroAlpha = smoothstep(0.0, 0.6, ctaIn);
+  gyroRings.forEach((r, i) => {
+    const u = r.userData;
+    r.rotation.x += u.vx * dt;
+    r.rotation.y += u.vy * dt;
+    r.rotation.z += u.vz * dt;
+    r.material.uniforms.uTime.value = t;
+    /* dimmer in the center where text sits, brighter at edges */
+    r.material.uniforms.uAlpha.value = gyroAlpha * (0.45 + (i / GYRO_COUNT) * 0.7);
+  });
 
   composer.render();
   requestAnimationFrame(tick);
 }
 
-/* Kick off */
 requestAnimationFrame(tick);
 
-/* Remove boot veil once one real frame has rendered */
-window.addEventListener('load', () => {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      document.getElementById('slate-boot').classList.add('hide');
-    });
-  });
-});
+/* Remove loading veil on first frame OR after timeout fallback */
+const hideBoot = () => document.getElementById('slate-boot')?.classList.add('hide');
+let firstFrame = false;
+const origTick = requestAnimationFrame;
+requestAnimationFrame(() => requestAnimationFrame(() => { firstFrame = true; hideBoot(); }));
+setTimeout(hideBoot, 1600);
+window.addEventListener('load', () => setTimeout(hideBoot, 200));
 
-/* Decorative CTA button hook (identifier kept for future wire-up) */
+/* Decorative CTA button hook */
 const getStarted = document.getElementById('slate-get-started');
 if (getStarted) {
   getStarted.addEventListener('click', (e) => {
-    // Decorative only. Hookable via #slate-get-started / data-testid="slate-get-started-btn".
     e.preventDefault();
     console.log('[Slate] get-started clicked - wire this up later.');
   });
