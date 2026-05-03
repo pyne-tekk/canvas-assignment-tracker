@@ -143,13 +143,9 @@
 
   .slate-h1{
     font-size: clamp(42px, 7vw, 100px);
-    text-shadow:
-      0 2px 32px rgba(5,8,18,0.9),
-      0 0 90px rgba(5,8,18,0.55);
   }
   .slate-h2{
     font-size: clamp(34px, 5.2vw, 72px);
-    text-shadow: 0 2px 26px rgba(5,8,18,0.8);
   }
   .slate-h2.right{ margin-left:auto; text-align:right; }
 
@@ -159,7 +155,6 @@
     color: var(--slate-ink-soft);
     max-width: 48ch;
     font-weight: 300;
-    text-shadow: 0 1px 18px rgba(5,8,18,0.95);
     margin-top: 28px;
   }
   .slate-lede.right{ margin-left:auto; text-align:right; }
@@ -231,7 +226,6 @@
     font-size: 14px; color: var(--slate-ink-soft); font-weight: 300;
     display:flex; align-items:flex-start; gap: 12px;
     line-height: 1.5;
-    text-shadow: 0 1px 18px rgba(5,8,18,0.95);
   }
   .slate-meta-list li::before{
     content:""; display:block; width: 14px; height:1px; background: var(--slate-blue-bright);
@@ -290,7 +284,6 @@
   .slate-btn:hover .arrow{ transform: translateX(3px); }
   .slate-cta-sub{
     color: var(--slate-ink-soft); font-size: 13px; letter-spacing: 0.04em; font-weight: 500;
-    text-shadow: 0 1px 18px rgba(5,8,18,0.95);
   }
 
   footer.slate-foot{
@@ -329,12 +322,34 @@
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
   }
+
+  /* Custom white-dot cursor (desktop only) */
+  @media (pointer: fine){
+    html, body, a, button, input, textarea, select, [role="button"]{ cursor: none; }
+    .slate-cursor{
+      position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #ffffff;
+      transform: translate(-50%, -50%);
+      mix-blend-mode: difference;
+      transition: width .18s ease, height .18s ease, background .18s ease;
+      will-change: transform;
+    }
+    .slate-cursor.is-hover{
+      width: 36px; height: 36px;
+      background: color-mix(in oklch, var(--slate-blue-bright) 85%, #fff);
+    }
+  }
+  @media (pointer: coarse){
+    .slate-cursor{ display: none; }
+  }
 </style>
 </head>
 <body>
 
 <canvas id="slate-bg" aria-hidden="true"></canvas>
 <div class="slate-grain" aria-hidden="true"></div>
+<div class="slate-cursor" id="slate-cursor" aria-hidden="true"></div>
 
 <header class="slate-nav" data-testid="slate-navbar">
   <div class="slate-logo" data-testid="slate-logo">Slate<span class="dot">.</span></div>
@@ -600,7 +615,7 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: 'high-performance', stencil: false,
 });
 /* Supersample for crisp glows even on 1x DPI displays */
-const QUALITY_DPR = Math.min(Math.max(window.devicePixelRatio || 1, 1.6), 2.5);
+const QUALITY_DPR = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
 renderer.setPixelRatio(QUALITY_DPR);
 renderer.setSize(window.innerWidth, window.innerHeight, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -971,16 +986,20 @@ function makeSliderTexture(d, pos, gradeText) {
   ctx.fillText(d.label, 44, 46);
 
   /* grade chip on the right */
-  const gradeW = 180;
+  const gradeW = 280;
   const gradeX = w - gradeW - 36;
   ctx.fillStyle = 'rgba(140,180,255,0.12)';
-  roundRect(ctx, gradeX, 16, gradeW, 48, 16); ctx.fill();
+  roundRect(ctx, gradeX, 16, gradeW, 54, 18); ctx.fill();
   ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
-  roundRect(ctx, gradeX + 0.75, 16.75, gradeW - 1.5, 46.5, 16); ctx.stroke();
+  roundRect(ctx, gradeX + 0.75, 16.75, gradeW - 1.5, 52.5, 18); ctx.stroke();
+  ctx.fillStyle = 'rgba(210,224,255,0.72)';
+  ctx.font = '500 18px Geist, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('class grade', gradeX + 22, 48);
   ctx.fillStyle = d.color;
-  ctx.font = '600 28px Geist, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('class grade ' + gradeText, gradeX + gradeW/2, 48);
+  ctx.font = '600 26px Geist, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(gradeText, gradeX + gradeW - 22, 49);
   ctx.textAlign = 'left';
 
   /* slider track */
@@ -1381,7 +1400,7 @@ function onResize(){
   const w = window.innerWidth, h = window.innerHeight;
   camera.aspect = w/h;
   camera.updateProjectionMatrix();
-  const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1.6), 2.5);
+  const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
   renderer.setSize(w, h, false);
   renderer.setPixelRatio(dpr);
   composer.setSize(w, h);
@@ -1741,6 +1760,30 @@ if (getStarted) {
     console.log('[Slate] get-started clicked - wire this up later.');
   });
 }
+
+/* Custom white-dot cursor */
+(function initCursor(){
+  const el = document.getElementById('slate-cursor');
+  if (!el) return;
+  if (window.matchMedia('(pointer: coarse)').matches) { el.style.display = 'none'; return; }
+  let x = window.innerWidth / 2, y = window.innerHeight / 2;
+  let tx = x, ty = y;
+  window.addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; }, { passive: true });
+  window.addEventListener('pointerdown', () => el.classList.add('is-hover'));
+  window.addEventListener('pointerup', () => el.classList.remove('is-hover'));
+  const hoverables = 'a, button, [role="button"], input, textarea, select';
+  document.querySelectorAll(hoverables).forEach(n => {
+    n.addEventListener('pointerenter', () => el.classList.add('is-hover'));
+    n.addEventListener('pointerleave', () => el.classList.remove('is-hover'));
+  });
+  function loop(){
+    x += (tx - x) * 0.35;
+    y += (ty - y) * 0.35;
+    el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
 </script>
 
 </body>
