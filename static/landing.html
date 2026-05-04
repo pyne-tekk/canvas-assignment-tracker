@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <script>
-(function(){try{var k=Object.keys(localStorage).find(function(k){return k.startsWith('sb-')&&k.endsWith('-auth-token');});if(!k)return;var s=JSON.parse(localStorage.getItem(k));if(s&&s.access_token&&s.expires_at&&Date.now()/1000<s.expires_at){window.location.replace('/app');}}catch(_){}})();
+if(localStorage.getItem('slate_rt'))window.location.replace('/app');
 </script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <meta name="color-scheme" content="dark" />
