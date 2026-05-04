@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<script>
+(function(){try{var k=Object.keys(localStorage).find(function(k){return k.startsWith('sb-')&&k.endsWith('-auth-token');});if(!k)return;var s=JSON.parse(localStorage.getItem(k));if(s&&s.access_token&&s.expires_at&&Date.now()/1000<s.expires_at){window.location.replace('/app');}}catch(_){}})();
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <meta name="color-scheme" content="dark" />
 <title>Slate. Your grades, alive.</title>
@@ -288,11 +291,16 @@
     .slate-nav-links a:not(.slate-nav-cta){ display:none; }
     .slate-nav-links{ gap:0; }
     header.slate-nav{ padding:16px clamp(16px,4vw,28px); }
-    .hero-preview-card{ margin-top:28px; }
-    .slate-section{ padding:60px 20px; }
+    .hero-preview-card{ margin-top:28px; max-width:100%; animation:none; }
+    .slate-section{ padding:56px 20px; }
     .slate-proof-row{ gap:20px; margin-top:32px; }
     .proof-div{ display:none; }
     footer.slate-foot{ flex-direction:column; align-items:flex-start; gap:10px; }
+    .hpc-live-dot{ animation:none; }
+    .scroll-hint{ display:none; }
+  }
+  @media(max-width:400px){
+    .hero-preview-card{ display:none; }
   }
 
   /* Split layouts */
@@ -832,8 +840,11 @@ const renderer = new THREE.WebGLRenderer({
   canvas, antialias: true, alpha: true,
   powerPreference: 'high-performance', stencil: false,
 });
-/* Supersample for crisp glows even on 1x DPI displays */
-const QUALITY_DPR = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
+const IS_MOBILE = window.matchMedia('(pointer: coarse)').matches;
+/* Supersample for crisp glows on desktop; cap at native on mobile */
+const QUALITY_DPR = IS_MOBILE
+  ? Math.min(window.devicePixelRatio || 1, 1.5)
+  : Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
 renderer.setPixelRatio(QUALITY_DPR);
 renderer.setSize(window.innerWidth, window.innerHeight, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -874,7 +885,7 @@ scene.environment = pmrem.fromScene(envScene, 0.04).texture;
 /* ==========================================================
    STARFIELD (always visible)
    ========================================================== */
-const STAR_COUNT = 900;
+const STAR_COUNT = IS_MOBILE ? 350 : 900;
 const starGeo = new THREE.BufferGeometry();
 const sP = new Float32Array(STAR_COUNT * 3);
 const sS = new Float32Array(STAR_COUNT);
@@ -1569,6 +1580,7 @@ const bloomPass = new UnrealBloomPass(
   0.22,   // radius  -> smaller = crisper
   0.62    // threshold -> higher so UI text doesn't bloom
 );
+if (IS_MOBILE) bloomPass.enabled = false;
 composer.addPass(bloomPass);
 
 const finishPass = new ShaderPass({
@@ -1610,7 +1622,7 @@ ScrollTrigger.create({
   trigger: 'main.slate-main',
   start: 'top top',
   end: 'bottom bottom',
-  scrub: 0.3,
+  scrub: IS_MOBILE ? 0.1 : 0.3,
   onUpdate: self => { scrollProxy.value = self.progress * 5; },
 });
 
@@ -1621,7 +1633,9 @@ function onResize(){
   const w = window.innerWidth, h = window.innerHeight;
   camera.aspect = w/h;
   camera.updateProjectionMatrix();
-  const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
+  const dpr = IS_MOBILE
+    ? Math.min(window.devicePixelRatio || 1, 1.5)
+    : Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
   renderer.setSize(w, h, false);
   renderer.setPixelRatio(dpr);
   composer.setSize(w, h);
@@ -1685,13 +1699,13 @@ function tick(){
   const t = clock.elapsedTime;
   const p = scrollProxy.value;
 
-  /* pointer smoothing */
-  pointer.x += (pointer.tx - pointer.x) * 0.06;
-  pointer.y += (pointer.ty - pointer.y) * 0.06;
-
-  /* Camera parallax */
-  camera.position.x = pointer.x * 0.45;
-  camera.position.y = -pointer.y * 0.32;
+  /* pointer smoothing (desktop only) */
+  if (!IS_MOBILE) {
+    pointer.x += (pointer.tx - pointer.x) * 0.06;
+    pointer.y += (pointer.ty - pointer.y) * 0.06;
+    camera.position.x = pointer.x * 0.45;
+    camera.position.y = -pointer.y * 0.32;
+  }
   camera.lookAt(0, 0, 0);
 
   /* stars */
@@ -2009,20 +2023,6 @@ if (getStarted) {
   requestAnimationFrame(loop);
 })();
 
-// Auth redirect — send signed-in users straight to /app
-(function () {
-  try {
-    const key = Object.keys(localStorage).find(k =>
-      k.startsWith('sb-') && k.endsWith('-auth-token')
-    );
-    if (!key) return;
-    const session = JSON.parse(localStorage.getItem(key));
-    if (!session?.access_token || !session?.expires_at) return;
-    if (Date.now() / 1000 < session.expires_at) {
-      window.location.replace('/app');
-    }
-  } catch (_) {}
-})();
 
 // CTA button → /app
 document.getElementById('slate-get-started').addEventListener('click', function () {
