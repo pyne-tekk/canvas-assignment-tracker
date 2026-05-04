@@ -13,6 +13,8 @@ if(localStorage.getItem('slate_rt'))window.location.replace('/app');
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;500;600&display=swap" rel="stylesheet" />
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" as="script" />
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" as="script" />
 
 <style>
   :root{
@@ -640,25 +642,21 @@ if(localStorage.getItem('slate_rt'))window.location.replace('/app');
   <div class="line"></div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
 <script type="importmap">
 {
   "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
   }
 }
 </script>
 
 <script type="module">
-import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+const IS_MOBILE = window.matchMedia('(pointer: coarse)').matches;
+const _hideBoot = () => document.getElementById('slate-boot')?.classList.add('hide');
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -832,6 +830,24 @@ if (ctaHeading) {
   io.observe(document.getElementById('slate-cta'));
 }
 
+if (!IS_MOBILE) {
+(async () => {
+const [
+  { default: THREE },
+  { EffectComposer },
+  { RenderPass },
+  { UnrealBloomPass },
+  { ShaderPass },
+  { OutputPass },
+] = await Promise.all([
+  import('three'),
+  import('three/addons/postprocessing/EffectComposer.js'),
+  import('three/addons/postprocessing/RenderPass.js'),
+  import('three/addons/postprocessing/UnrealBloomPass.js'),
+  import('three/addons/postprocessing/ShaderPass.js'),
+  import('three/addons/postprocessing/OutputPass.js'),
+]);
+
 /* ==========================================================
    Three.js renderer + composer (HIGH QUALITY)
    ========================================================== */
@@ -840,7 +856,6 @@ const renderer = new THREE.WebGLRenderer({
   canvas, antialias: true, alpha: true,
   powerPreference: 'high-performance', stencil: false,
 });
-const IS_MOBILE = window.matchMedia('(pointer: coarse)').matches;
 /* Supersample for crisp glows on desktop; cap at native on mobile */
 const QUALITY_DPR = IS_MOBILE
   ? Math.min(window.devicePixelRatio || 1, 1.5)
@@ -1983,20 +1998,16 @@ function tick(){
 requestAnimationFrame(tick);
 
 /* Remove loading veil on first frame OR after timeout fallback */
-const hideBoot = () => document.getElementById('slate-boot')?.classList.add('hide');
-let firstFrame = false;
-const origTick = requestAnimationFrame;
-requestAnimationFrame(() => requestAnimationFrame(() => { firstFrame = true; hideBoot(); }));
-setTimeout(hideBoot, 1600);
-window.addEventListener('load', () => setTimeout(hideBoot, 200));
+requestAnimationFrame(() => requestAnimationFrame(() => _hideBoot()));
+setTimeout(_hideBoot, 1600);
+window.addEventListener('load', () => setTimeout(_hideBoot, 200));
 
-/* Decorative CTA button hook */
-const getStarted = document.getElementById('slate-get-started');
-if (getStarted) {
-  getStarted.addEventListener('click', (e) => {
-    e.preventDefault();
-    console.log('[Slate] get-started clicked - wire this up later.');
-  });
+})(); // end async Three.js IIFE
+} else {
+  // Mobile: no Three.js — hide canvas and dismiss boot quickly
+  document.getElementById('slate-bg').style.display = 'none';
+  setTimeout(_hideBoot, 500);
+  window.addEventListener('load', () => setTimeout(_hideBoot, 200));
 }
 
 /* Custom white-dot cursor */
