@@ -15,6 +15,12 @@ if(localStorage.getItem('slate_rt'))window.location.replace('/app');
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;500;600&display=swap" rel="stylesheet" />
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" as="script" />
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" as="script" />
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" />
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js" />
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/RenderPass.js" />
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js" />
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/ShaderPass.js" />
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/OutputPass.js" />
 
 <style>
   :root{
@@ -830,8 +836,16 @@ if (ctaHeading) {
   io.observe(document.getElementById('slate-cta'));
 }
 
+/* Show page content immediately — don't hold users hostage to GPU work */
+setTimeout(_hideBoot, 650);
+window.addEventListener('load', _hideBoot);
+
 if (!IS_MOBILE) {
 (async () => {
+/* Canvas starts invisible; fades in once WebGL first frame is painted */
+const _bg = document.getElementById('slate-bg');
+_bg.style.opacity = '0';
+_bg.style.transition = 'opacity 1.4s ease';
 const [
   THREE,
   { EffectComposer },
@@ -1997,17 +2011,13 @@ function tick(){
 
 requestAnimationFrame(tick);
 
-/* Remove loading veil on first frame OR after timeout fallback */
-requestAnimationFrame(() => requestAnimationFrame(() => _hideBoot()));
-setTimeout(_hideBoot, 1600);
-window.addEventListener('load', () => setTimeout(_hideBoot, 200));
+/* Fade canvas in on first painted frame */
+requestAnimationFrame(() => requestAnimationFrame(() => { _bg.style.opacity = '1'; }));
 
 })(); // end async Three.js IIFE
 } else {
-  // Mobile: no Three.js — hide canvas and dismiss boot quickly
+  // Mobile: no Three.js — hide canvas
   document.getElementById('slate-bg').style.display = 'none';
-  setTimeout(_hideBoot, 500);
-  window.addEventListener('load', () => setTimeout(_hideBoot, 200));
 }
 
 /* Custom white-dot cursor */
