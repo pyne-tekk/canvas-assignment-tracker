@@ -598,18 +598,47 @@ def _grade_snapshot(grades: list) -> dict:
     return {(c.get('name', ''), c.get('term', '')): c.get('grade') for c in (grades or [])}
 
 
+_Q_ORDER = ['Q1', 'Q2', 'Q3', 'Q4']
+
+def _past_quarter_set() -> set:
+    """Return the set of quarter labels that are fully finished as of today."""
+    cq = get_quarter()
+    if cq == 'all':
+        return set()
+    try:
+        idx = _Q_ORDER.index(cq)
+        return set(_Q_ORDER[:idx])
+    except ValueError:
+        return set()
+
+
 def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str, token: str = None):
     """Re-auth and refresh IC grades for a single user. Returns grades list on success, None on failure."""
     try:
         db = user_db(token) if token else (_admin or _auth)
+        now = datetime.now(timezone.utc)
+        past_qs = _past_quarter_set()
 
-        old_grades = []
+        old_grades      = []
+        ic_past_synced  = None
         try:
-            old_row = db.table('users').select('ic_grades_cache').eq('id', uid).execute()
+            old_row = db.table('users').select('ic_grades_cache, ic_past_synced_at').eq('id', uid).execute()
             if old_row.data:
-                old_grades = old_row.data[0].get('ic_grades_cache') or []
+                old_grades     = old_row.data[0].get('ic_grades_cache') or []
+                ic_past_synced = old_row.data[0].get('ic_past_synced_at')
         except Exception:
             pass
+
+        # Past grades are stale if never fetched or older than 7 days
+        past_stale = True
+        if ic_past_synced:
+            try:
+                last = datetime.fromisoformat(ic_past_synced.replace('Z', '+00:00'))
+                past_stale = (now - last).days >= 7
+            except Exception:
+                pass
+
+        cached_past = [g for g in old_grades if g.get('term') in past_qs] if (not past_stale and past_qs) else []
 
         password = decrypt_val(encrypted_pw)
         if not _playwright_lock.acquire(timeout=180):
@@ -620,14 +649,22 @@ def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str, 
         finally:
             _playwright_lock.release()
 
-        db.table('users').update({
-            'ic_grades_cache': grades,
-            'ic_synced_at': datetime.now(timezone.utc).isoformat(),
-        }).eq('id', uid).execute()
-        log.info(f'IC sync OK for user {uid[:8]}... ({len(grades)} courses)')
+        if cached_past:
+            # Drop past-quarter entries from fresh IC data, substitute cached ones
+            current_grades = [g for g in grades if g.get('term') not in past_qs]
+            grades = current_grades + cached_past
+            db_update = {'ic_grades_cache': grades, 'ic_synced_at': now.isoformat()}
+            log.info(f'IC sync OK for {uid[:8]}... ({len(grades)} courses, past quarters from cache)')
+        else:
+            db_update = {
+                'ic_grades_cache':   grades,
+                'ic_synced_at':      now.isoformat(),
+                'ic_past_synced_at': now.isoformat(),
+            }
+            log.info(f'IC sync OK for {uid[:8]}... ({len(grades)} courses, past quarters refreshed)')
 
+        db.table('users').update(db_update).eq('id', uid).execute()
         send_grade_email(uid, len(grades))
-
         return grades
     except Exception as e:
         log.warning(f'IC sync failed for user {uid[:8]}...: {e}')
