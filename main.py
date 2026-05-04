@@ -60,11 +60,26 @@ Talisman(app,
     session_cookie_secure=True,
     content_security_policy={
         'default-src': "'self'",
-        'script-src': ["'self'", "'unsafe-inline'"],
+        'script-src': [
+            "'self'", "'unsafe-inline'",
+            'https://cdnjs.cloudflare.com',
+            'https://unpkg.com',
+        ],
+        'script-src-elem': [
+            "'self'", "'unsafe-inline'",
+            'https://cdnjs.cloudflare.com',
+            'https://unpkg.com',
+        ],
         'style-src': ["'self'", "'unsafe-inline'", 'fonts.googleapis.com'],
         'font-src': ["'self'", 'fonts.gstatic.com'],
         'img-src': ["'self'", 'data:'],
-        'connect-src': ["'self'", 'https://*.supabase.co'],
+        'connect-src': [
+            "'self'",
+            'https://*.supabase.co',
+            'https://unpkg.com',
+            'https://cdnjs.cloudflare.com',
+        ],
+        'worker-src': ["'self'", 'blob:'],
     }
 )
 
@@ -977,6 +992,14 @@ def format_assignment(a, course_name, now, group_id=None, group_name=None, group
 
 
 @app.route("/")
+@limiter.exempt
+def landing():
+    resp = send_from_directory("static", "landing.html")
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp
+
+
+@app.route("/app")
 @limiter.exempt
 def index():
     resp = send_from_directory("static", "index.html")
