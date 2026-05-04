@@ -726,23 +726,23 @@ body {
   </div>
 
   <nav class="bottom-nav" aria-label="Navigation">
-    <div class="bn-item nav-item" data-page="dashboard" onclick="showPage('dashboard',this)">
+    <div class="bn-item" data-page="dashboard" onclick="showPage('dashboard',this)">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       Home
     </div>
-    <div class="bn-item nav-item" data-page="assignments" onclick="showPage('assignments',this)">
+    <div class="bn-item" data-page="assignments" onclick="showPage('assignments',this)">
       <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
       Work
     </div>
-    <div class="bn-item nav-item" data-page="grades" onclick="showPage('grades',this)">
+    <div class="bn-item" data-page="grades" onclick="showPage('grades',this)">
       <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
       Grades
     </div>
-    <div class="bn-item nav-item" data-page="calendar" onclick="showPage('calendar',this)">
+    <div class="bn-item" data-page="calendar" onclick="showPage('calendar',this)">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
       Calendar
     </div>
-    <div class="bn-item nav-item" data-page="settings" onclick="showPage('settings',this)">
+    <div class="bn-item" data-page="settings" onclick="showPage('settings',this)">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
       Settings
     </div>
@@ -838,4 +838,1048 @@ body {
               <button class="cal-nav-btn" onclick="calPrev()" aria-label="Previous month">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
               </button>
-              <button class="cal-
+              <button class="cal-nav-btn" onclick="calNext()" aria-label="Next month">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="cal-weekdays">
+            <div class="cal-weekday">Su</div><div class="cal-weekday">Mo</div><div class="cal-weekday">Tu</div>
+            <div class="cal-weekday">We</div><div class="cal-weekday">Th</div><div class="cal-weekday">Fr</div>
+            <div class="cal-weekday">Sa</div>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+        <div class="cal-detail-panel">
+          <div class="cal-detail-head" id="calDetailHead">Select a date</div>
+          <div id="calDetail"><div class="empty">Click any day to see assignments due.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="page" id="page-settings">
+      <div class="page-title">Settings</div>
+      <div class="page-sub">Connections, integrations, and your academic calendar.</div>
+
+      <!-- Canvas -->
+      <div class="settings-card">
+        <div class="settings-head">Canvas Connection</div>
+        <div id="canvasConnectForm">
+          <div class="ic-connect-body">
+            <p class="ic-connect-desc">Connect Canvas to see upcoming assignments, due dates, and grade predictions for assignments not yet in IC.</p>
+            <div class="field">
+              <label class="field-label" for="cvDomain">School domain</label>
+              <input class="field-input" id="cvDomain" type="text" placeholder="school.instructure.com" autocomplete="off" />
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label class="field-label" for="cvToken">Canvas API token</label>
+              <input class="field-input" id="cvToken" type="password" placeholder="Paste your token here" autocomplete="off" />
+            </div>
+            <button class="ic-connect-btn" id="canvasConnectBtn" onclick="connectCanvas()">Connect Canvas</button>
+            <div id="canvasConnectStatus"></div>
+          </div>
+        </div>
+        <div id="canvasConnectedState" style="display:none">
+          <div class="settings-row"><span class="settings-key">Status</span><span class="settings-val ok">Connected</span></div>
+          <div class="settings-row"><span class="settings-key">Domain</span><span class="settings-val" id="settingsDomain">—</span></div>
+          <div class="settings-row">
+            <span class="settings-key"></span>
+            <button class="ic-disconnect-btn" onclick="disconnectCanvas()">Disconnect</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Infinite Campus -->
+      <div class="settings-card">
+        <div class="settings-head">
+          Infinite Campus
+          <div class="settings-head-right">
+            <span class="settings-toggle-label">Use IC grades</span>
+            <div class="toggle disabled" id="icGradesToggle" onclick="toggleICGrades()">
+              <div class="toggle-thumb"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Not connected: connect form -->
+        <div id="icConnectForm">
+          <div class="ic-connect-body">
+            <p class="ic-connect-desc">Connect Infinite Campus to display official grades from your school's primary system — not Canvas estimates. Uses your NCEDCloud credentials.</p>
+            <div class="field">
+              <label class="field-label" for="icUsername">NCEDCloud username</label>
+              <input class="field-input" id="icUsername" type="text" placeholder="Your school username" autocomplete="username" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="icPassword">NCEDCloud password</label>
+              <input class="field-input" id="icPassword" type="password" placeholder="••••••••" autocomplete="current-password" />
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label class="field-label" for="icDomain">Infinite Campus domain</label>
+              <input class="field-input" id="icDomain" type="text" placeholder="e.g. 600.ncsis.gov or district.infinitecampus.org" autocomplete="off" />
+            </div>
+            <button class="ic-connect-btn" id="icConnectBtn" onclick="connectIC()">Connect Infinite Campus</button>
+            <div id="icConnectStatus"></div>
+          </div>
+        </div>
+
+        <!-- Connected state -->
+        <div id="icConnectedState" style="display:none">
+          <div class="settings-row"><span class="settings-key">Status</span><span class="settings-val ok">Connected</span></div>
+          <div class="settings-row"><span class="settings-key">Domain</span><span class="settings-val" id="icDomainDisplay">—</span></div>
+          <div class="settings-row"><span class="settings-key">Last synced</span><span class="settings-val" id="icSyncedDisplay">—</span></div>
+          <div class="settings-row"><span class="settings-key">Sync interval</span><span class="settings-val">Every 20 min</span></div>
+          <div class="settings-row">
+            <span class="settings-key" id="icSyncStatus" style="font-size:11px"></span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="ic-disconnect-btn" id="icSyncBtn" onclick="syncICNow()" style="border-color:var(--border2);color:var(--text2)">Sync now</button>
+              <button class="ic-disconnect-btn" onclick="disconnectIC()">Disconnect</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Academic Calendar -->
+      <div class="settings-card">
+        <div class="settings-head">Academic Calendar</div>
+        <div class="settings-row"><span class="settings-key">Q1</span><span class="settings-val">Aug 25 – Oct 17, 2025</span></div>
+        <div class="settings-row"><span class="settings-key">Q2</span><span class="settings-val">Oct 20, 2025 – Jan 16, 2026</span></div>
+        <div class="settings-row"><span class="settings-key">Q3</span><span class="settings-val">Jan 20 – Mar 20, 2026</span></div>
+        <div class="settings-row"><span class="settings-key">Q4</span><span class="settings-val">Mar 23 – Jun 12, 2026</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Assignment Detail Drawer ──────────────────────── -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="assignDrawer" role="dialog" aria-modal="true" aria-label="Course assignments">
+  <div class="drawer-head">
+    <button class="drawer-close" onclick="closeDrawer()">← Back</button>
+    <div style="margin-top:36px;flex:1">
+      <div class="drawer-title" id="drawerTitle">—</div>
+      <div class="drawer-meta"  id="drawerMeta"></div>
+    </div>
+    <div class="drawer-grade-badge" style="margin-top:36px">
+      <div class="drawer-pct"    id="drawerPct">—</div>
+      <div class="drawer-letter" id="drawerLetter"></div>
+    </div>
+  </div>
+  <div class="drawer-body" id="drawerBody">
+    <div class="drawer-empty">Loading assignments…</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+let all = [], sf = 'upcoming', qf = 'all', gqf = 'all', hideNDD = false;
+let userToken = null;
+let calYear, calMonth, calSelectedDay = null;
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// IC state
+let _ic = { connected: false, enabled: false, domain: null, grades: [], synced_at: null };
+
+const quarters = {
+  Q1: [new Date('2025-08-25'), new Date('2025-10-17')],
+  Q2: [new Date('2025-10-20'), new Date('2026-01-16')],
+  Q3: [new Date('2026-01-20'), new Date('2026-03-20')],
+  Q4: [new Date('2026-03-23'), new Date('2026-06-12')],
+};
+
+function getQ(raw) {
+  if (!raw) return null;
+  const d = new Date(raw);
+  for (const [q,[s,e]] of Object.entries(quarters)) if (d >= s && d <= e) return q;
+  return null;
+}
+
+function computeGPA(grades) {
+  const valid = grades.filter(c => c.grade != null && c.grade > 0);
+  if (!valid.length) return { weighted: null, unweighted: null };
+  let wSum = 0, uwSum = 0;
+  valid.forEach(c => {
+    const p = c.grade;
+    const pts = p >= 90 ? 4.0 : p >= 80 ? 3.0 : p >= 70 ? 2.0 : p >= 60 ? 1.0 : 0.0;
+    const n   = c.name.toLowerCase();
+    const bonus = (n.includes('ap ') || n.startsWith('ap') || / ap$/.test(n)) ? 1.0
+                : n.includes('honors') ? 0.5 : 0.0;
+    uwSum += pts;
+    wSum  += pts + bonus;
+  });
+  const n = valid.length;
+  return { weighted: (wSum / n).toFixed(2), unweighted: (uwSum / n).toFixed(2) };
+}
+
+function predictGrade(cats, hypotheticals) {
+  let weightedSum = 0, totalUsedWeight = 0;
+  cats.forEach(cat => {
+    const scored = cat.assignments.filter(a => !a.notGraded && !a.missing && !a.dropped && a.score != null);
+    let earned   = scored.reduce((s, a) => s + parseFloat(a.score  || 0), 0);
+    let possible = scored.reduce((s, a) => s + parseFloat(a.max    || 100), 0);
+    hypotheticals.forEach(h => {
+      if (h.cat && h.cat.toLowerCase() === cat.name.toLowerCase()) {
+        earned   += h.score;
+        possible += 100;
+      }
+    });
+    if (possible > 0) {
+      weightedSum      += (earned / possible * 100) * cat.weight;
+      totalUsedWeight  += cat.weight;
+    }
+  });
+  return totalUsedWeight > 0 ? Math.round(weightedSum / totalUsedWeight) : null;
+}
+
+function updatePrediction() {
+  const course = window._drawerCourse;
+  if (!course) return;
+  const catsByTerm = course.categories_by_term || {};
+  const term = (gqf !== 'all' && catsByTerm[gqf]) ? gqf
+             : ['Q4','Q3','Q2','Q1','Final'].find(t => catsByTerm[t]?.length) || null;
+  const cats = term ? (catsByTerm[term] || []) : [];
+  if (!cats.length) return;
+
+  const hypotheticals = [];
+  document.querySelectorAll('.predict-slider').forEach((slider, i) => {
+    const score = parseInt(slider.value);
+    document.getElementById('ps-' + i).textContent = score + '%';
+    hypotheticals.push({ cat: slider.dataset.cat, score });
+  });
+
+  const predicted = predictGrade(cats, hypotheticals);
+  const el = document.getElementById('predictResult');
+  if (el && predicted !== null) {
+    el.textContent   = predicted + '%';
+    el.style.color   = gradeColor(predicted);
+  }
+}
+
+function gradeColor(p) {
+  if (p >= 90) return 'var(--green)';
+  if (p >= 80) return 'var(--blue)';
+  if (p >= 70) return 'var(--orange)';
+  return 'var(--red)';
+}
+
+function updateAssignPrediction(slider) {
+  const courseName = slider.dataset.course;
+  const catName    = slider.dataset.cat;
+  const score      = parseInt(slider.value);
+  const scoreEl    = slider.parentElement.querySelector('.ap-score');
+  const resultEl   = slider.parentElement.parentElement.querySelector('.ap-result');
+  if (scoreEl) scoreEl.textContent = score + '%';
+
+  // Find course — prefer matching term, fall back to any with categories loaded
+  const allMatches = (_ic.grades || []).filter(c => c.name === courseName);
+  const course = allMatches.find(c => c.term === gqf)
+              || allMatches.find(c => c.categories_by_term && Object.keys(c.categories_by_term).length > 0)
+              || allMatches[0];
+  if (!course) return;
+  const catsByTerm = course.categories_by_term || {};
+  const termKeys   = Object.keys(catsByTerm);
+  const term = (gqf !== 'all' && catsByTerm[gqf] && catsByTerm[gqf].length) ? gqf
+             : ['Q4','Q3','Q2','Q1','Final'].find(t => catsByTerm[t] && catsByTerm[t].length)
+             || termKeys[0] || null;
+  const cats = term ? (catsByTerm[term] || []) : [];
+
+  if (resultEl) {
+    if (!cats.length) {
+      resultEl.textContent = '— reload page after sync';
+      resultEl.style.color = 'var(--text3)';
+      return;
+    }
+    const predicted = predictGrade(cats, [{ cat: catName, score }]);
+    if (predicted !== null) {
+      resultEl.textContent = `→ ${predicted}% course grade`;
+      resultEl.style.color = gradeColor(predicted);
+    } else {
+      resultEl.textContent = '— category not matched';
+      resultEl.style.color = 'var(--text3)';
+    }
+  }
+}
+
+function gradeLetter(p) {
+  if (p >= 93) return 'A';  if (p >= 90) return 'A-';
+  if (p >= 87) return 'B+'; if (p >= 83) return 'B';
+  if (p >= 80) return 'B-'; if (p >= 77) return 'C+';
+  if (p >= 73) return 'C';  return 'D';
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning.' : h < 17 ? 'Good afternoon.' : 'Good evening.';
+}
+
+function buildDesc(missing, soon) {
+  if (missing > 0 && soon > 0) return `You have ${missing} missing assignment${missing>1?'s':''} and ${soon} due within 48 hours.`;
+  if (missing > 0) return `You have ${missing} missing assignment${missing>1?'s':''}. Get those in as soon as possible.`;
+  if (soon > 0)    return `${soon} assignment${soon>1?' are':' is'} due within 48 hours. Stay on top of it.`;
+  return 'No urgent items right now. Stay ahead of your upcoming work.';
+}
+
+function timeAgo(isoStr) {
+  const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
+  if (diff < 60)    return 'Just now';
+  if (diff < 3600)  return Math.floor(diff / 60) + ' min ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+function countUp(el, target, duration) {
+  if (!target || isNaN(target)) { el.textContent = target ?? '—'; return; }
+  const start = performance.now();
+  (function frame(now) {
+    const t = Math.min((now - start) / duration, 1);
+    el.textContent = Math.round((1 - Math.pow(1 - t, 3)) * target);
+    if (t < 1) requestAnimationFrame(frame);
+  })(performance.now());
+}
+
+function animateSidebar() {
+  document.querySelectorAll('.nav-label, .nav-item')
+    .forEach((el, i) => setTimeout(() => el.classList.add('nav-in'), i * 50));
+}
+function resetSidebar() {
+  document.querySelectorAll('.nav-label, .nav-item').forEach(el => el.classList.remove('nav-in'));
+}
+
+/* ── IC integration ──────────────────────────────────── */
+async function loadICStatus() {
+  if (!userToken) return;
+  try {
+    const res  = await fetch('/api/ic_status', { headers: { 'Authorization': 'Bearer ' + userToken } });
+    const data = await res.json();
+    _ic = { connected: data.connected, enabled: data.enabled, domain: data.domain, grades: data.grades || [], synced_at: data.synced_at };
+    _applyICStatus();
+  } catch (e) { /* IC is optional — silent fail */ }
+}
+
+function _applyICStatus() {
+  const { connected, enabled, domain, synced_at } = _ic;
+
+  // Toggle state
+  const tog = document.getElementById('icGradesToggle');
+  if (tog) {
+    tog.classList.toggle('on', enabled);
+    tog.classList.toggle('disabled', !connected);
+  }
+
+  // Form vs connected display
+  const form  = document.getElementById('icConnectForm');
+  const state = document.getElementById('icConnectedState');
+  if (form && state) {
+    form.style.display  = connected ? 'none'  : 'block';
+    state.style.display = connected ? 'block' : 'none';
+  }
+
+  // Detail fields
+  const domEl  = document.getElementById('icDomainDisplay');
+  const syncEl = document.getElementById('icSyncedDisplay');
+  if (domEl)  domEl.textContent  = domain    || '—';
+  if (syncEl) syncEl.textContent = synced_at ? timeAgo(synced_at) : '—';
+}
+
+async function connectIC() {
+  const username  = document.getElementById('icUsername').value.trim();
+  const password  = document.getElementById('icPassword').value.trim();
+  const ic_domain = document.getElementById('icDomain').value.trim()
+    .replace(/^https?:\/\//,'').replace(/\/$/,'');
+  const status = document.getElementById('icConnectStatus');
+  const btn    = document.getElementById('icConnectBtn');
+
+  if (!username || !password || !ic_domain) {
+    status.className = 'error';
+    status.textContent = 'All three fields are required.';
+    return;
+  }
+
+  btn.disabled = true;
+  status.className = 'loading';
+  status.innerHTML = '<span class="spinner"></span>Authenticating via NCEDCloud…';
+
+  try {
+    const res  = await fetch('/api/connect_ic', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + userToken },
+      body: JSON.stringify({ username, password, ic_domain }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      status.className = 'error';
+      status.textContent = data.error || 'Connection failed.';
+      btn.disabled = false;
+      return;
+    }
+
+    status.className = 'ok';
+    status.textContent = `Connected — ${data.course_count} course${data.course_count !== 1 ? 's' : ''} found.`;
+
+    _ic = { connected: true, enabled: true, domain: ic_domain, grades: data.grades || [], synced_at: data.synced_at };
+    _applyICStatus();
+    renderGrades(window._courses || []);
+  } catch (e) {
+    status.className = 'error';
+    status.textContent = 'Could not reach backend.';
+    btn.disabled = false;
+  }
+}
+
+async function syncICNow(silent = false) {
+  const btn = document.getElementById('icSyncBtn');
+  const st  = document.getElementById('icSyncStatus');
+  if (!silent) { btn.disabled = true; st.style.color = 'var(--blue)'; st.textContent = 'Syncing…'; }
+  try {
+    const res  = await fetch('/api/sync_ic', { method: 'POST', headers: { 'Authorization': 'Bearer ' + userToken } });
+    const data = await res.json();
+    if (!res.ok) {
+      if (silent) return; // background auto-sync: never wipe IC state on failure
+      if (data.error === 'reconnect') {
+        st.style.color = 'var(--red)';
+        st.textContent = data.message || 'Re-enter IC credentials.';
+        const settingsNav = document.querySelector('[data-page="settings"]');
+        if (settingsNav) showPage('settings', settingsNav);
+        _ic.connected = false;
+        _applyICStatus();
+        const csEl = document.getElementById('icConnectStatus');
+        if (csEl) { csEl.style.color = 'var(--red)'; csEl.textContent = data.message || 'Please re-enter your IC password.'; }
+      } else {
+        st.style.color = 'var(--red)'; st.textContent = data.error || 'Sync failed.';
+      }
+      btn.disabled = false; return;
+    }
+    _ic.grades    = data.grades || [];
+    _ic.synced_at = data.synced_at;
+    if (!silent) {
+      st.style.color = 'var(--green)';
+      st.textContent = `Done — ${_ic.grades.length} course${_ic.grades.length !== 1 ? 's' : ''}`;
+      const syncEl = document.getElementById('icSyncedDisplay');
+      if (syncEl) syncEl.textContent = 'Just now';
+    }
+    all = []; _fillAssignmentsFromIC();
+    renderGrades(window._courses || []);
+    renderAssign(); renderDash();
+  } catch (e) {
+    if (silent) return;
+    st.style.color = 'var(--orange)'; st.textContent = 'Sync running in background — reload in 2 min.';
+    await loadICStatus();
+    renderGrades(window._courses || []);
+  }
+  if (!silent) btn.disabled = false;
+}
+
+async function disconnectIC() {
+  try {
+    await fetch('/api/disconnect_ic', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + userToken },
+    });
+  } catch (e) { /* silent */ }
+
+  _ic = { connected: false, enabled: false, domain: null, grades: [], synced_at: null };
+  _applyICStatus();
+  renderGrades(window._courses || []);
+}
+
+async function toggleICGrades() {
+  if (!_ic.connected) return;
+  _ic.enabled = !_ic.enabled;
+
+  const tog = document.getElementById('icGradesToggle');
+  if (tog) tog.classList.toggle('on', _ic.enabled);
+
+  try {
+    await fetch('/api/toggle_ic', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + userToken },
+      body: JSON.stringify({ enabled: _ic.enabled }),
+    });
+  } catch (e) { /* silent */ }
+
+  renderGrades(window._courses || []);
+}
+
+/* ── Auth ───────────────────────────────────────────── */
+let _canvas = { connected: false, domain: null };
+
+async function authLogin() {
+  const email = document.getElementById('email').value.trim();
+  const pass  = document.getElementById('password').value.trim();
+  const st    = document.getElementById('authStatus');
+  st.className = 'loading'; st.innerHTML = '<span class="spinner"></span>Signing in…';
+  const res  = await fetch('/api/login_user', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) });
+  const data = await res.json();
+  if (!res.ok) { st.className='error'; st.textContent=data.error; return; }
+  userToken = data.token;
+  if (data.refresh_token) localStorage.setItem('slate_rt', data.refresh_token);
+  await enterApp();
+}
+
+async function authSignup() {
+  const email = document.getElementById('email').value.trim();
+  const pass  = document.getElementById('password').value.trim();
+  const st    = document.getElementById('authStatus');
+  st.className = 'loading'; st.innerHTML = '<span class="spinner"></span>Creating account…';
+  const res  = await fetch('/api/signup', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) });
+  const data = await res.json();
+  if (!res.ok) { st.className='error'; st.textContent=data.error; return; }
+  st.className='ok'; st.textContent='Account created. Check your email, then sign in.';
+}
+
+async function enterApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display         = 'block';
+  const dash    = document.getElementById('page-dashboard');
+  dash.classList.add('active');
+  document.querySelectorAll('[data-page="dashboard"]').forEach(function(n){n.classList.add('active');});
+  animateSidebar();
+  await loadICStatus();
+  renderGrades(window._courses || []);
+  _fillAssignmentsFromIC();
+  renderAssign();
+  renderDash();
+  initCalendar();
+  loadSavedCanvas(); // silent background — does not block app entry
+  if (_ic.connected) syncICNow(true); // auto-sync on login, silent — never clobber IC state on failure
+}
+
+async function loadSavedCanvas() {
+  try {
+    const res  = await fetch('/api/load_canvas', { headers:{'Authorization':'Bearer '+userToken} });
+    const data = await res.json();
+    if (data.canvas_domain && data.canvas_token) {
+      await _applyCanvasCreds(data.canvas_domain, data.canvas_token, false);
+    }
+  } catch(e) { /* silent */ }
+}
+
+async function connectCanvas() {
+  const domain = document.getElementById('cvDomain').value.trim().replace('https://','').replace(/\/$/,'');
+  const token  = document.getElementById('cvToken').value.trim();
+  const btn    = document.getElementById('canvasConnectBtn');
+  const status = document.getElementById('canvasConnectStatus');
+  if (!domain || !token) { status.className='error'; status.textContent='Both fields are required.'; return; }
+  btn.disabled = true;
+  status.className = 'loading'; status.innerHTML = '<span class="spinner"></span>Connecting…';
+  const ok = await _applyCanvasCreds(domain, token, true);
+  if (ok) { status.className='ok'; status.textContent='Connected!'; }
+  else    { status.className='error'; status.textContent='Connection failed — check your domain and token.'; }
+  btn.disabled = false;
+}
+
+async function _applyCanvasCreds(domain, token, save) {
+  try {
+    const res  = await fetch('/api/assignments', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({domain,token}) });
+    const data = await res.json();
+    if (!res.ok) return false;
+    all = data.assignments.map(a => ({...a, quarter: getQ(a.due_raw)}));
+    _canvas = { connected: true, domain };
+    if (save && userToken) {
+      await fetch('/api/save_canvas', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+userToken}, body:JSON.stringify({domain,token}) });
+    }
+    document.getElementById('settingsDomain').textContent         = domain;
+    document.getElementById('canvasConnectForm').style.display    = 'none';
+    document.getElementById('canvasConnectedState').style.display = 'block';
+    renderAssign();
+    renderDash();
+    renderGrades(data.courses || []);
+    return true;
+  } catch(e) { return false; }
+}
+
+async function disconnectCanvas() {
+  all = []; _canvas = { connected: false, domain: null }; window._courses = [];
+  if (userToken) {
+    await fetch('/api/save_canvas', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+userToken}, body:JSON.stringify({domain:'',token:''}) });
+  }
+  document.getElementById('canvasConnectForm').style.display    = 'block';
+  document.getElementById('canvasConnectedState').style.display = 'none';
+  document.getElementById('cvDomain').value = '';
+  document.getElementById('cvToken').value  = '';
+  renderAssign(); renderDash(); renderGrades([]);
+}
+
+function logout() {
+  all = []; calSelectedDay = null;
+  _ic     = { connected:false, enabled:false, domain:null, grades:[], synced_at:null };
+  _canvas = { connected:false, domain:null };
+  window._courses = [];
+  document.getElementById('app').style.display         = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('authStep').style.display    = 'block';
+  document.getElementById('authStatus').textContent    = '';
+  document.getElementById('email').value    = '';
+  document.getElementById('password').value = '';
+  document.getElementById('icUsername').value = '';
+  document.getElementById('icPassword').value = '';
+  document.getElementById('icDomain').value   = '';
+  document.getElementById('icConnectStatus').textContent = '';
+  document.getElementById('icConnectBtn').disabled = false;
+  document.getElementById('canvasConnectForm').style.display    = 'block';
+  document.getElementById('canvasConnectedState').style.display = 'none';
+  document.getElementById('cvDomain').value = '';
+  document.getElementById('cvToken').value  = '';
+  userToken = null;
+  localStorage.removeItem('slate_rt');
+  _applyICStatus();
+  resetSidebar();
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active','page-anim'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.bn-item').forEach(n => n.classList.remove('active'));
+}
+
+/* ── Render ─────────────────────────────────────────── */
+function buildTrendline(courseName) {
+  const termOrder = ['Q1','Q2','Q3','Q4'];
+  const map = {};
+  (_ic.grades || []).forEach(c => { if (c.name === courseName) map[c.term] = c.grade; });
+  const data = termOrder.map(t => map[t] != null ? Math.round(map[t]) : null).filter(v => v != null);
+  if (data.length < 2) return '';
+  const W = 64, H = 22, pad = 3;
+  const lo = Math.min(...data) - 3, hi = Math.max(...data) + 3, rng = hi - lo || 1;
+  const x = i => pad + i * (W - pad*2) / (data.length - 1);
+  const y = v => H - pad - ((v - lo) / rng) * (H - pad*2);
+  const pts = data.map((v,i) => `${x(i)},${y(v)}`).join(' ');
+  const col = gradeColor(data[data.length-1]);
+  return `<svg class="grade-trend" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+    <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${x(data.length-1)}" cy="${y(data[data.length-1])}" r="2.5" fill="${col}"/>
+  </svg>`;
+}
+
+function renderDash() {
+  const missing  = all.filter(a=>a.missing).length;
+  const soon     = all.filter(a=>a.due_soon&&!a.missing).length;
+  const upcoming = all.filter(a=>!a.missing&&!a.due_soon).length;
+  document.getElementById('dashGreeting').textContent = greeting();
+  document.getElementById('dashDesc').textContent     = buildDesc(missing, soon);
+  document.getElementById('streakNum').textContent    = '0';
+  countUp(document.getElementById('sUpcoming'), upcoming, 420);
+  countUp(document.getElementById('sSoon'),     soon,     420);
+  countUp(document.getElementById('sMissing'),  missing,  420);
+  countUp(document.getElementById('sTotal'),    all.length, 480);
+  const priority = [...all.filter(a=>a.missing),...all.filter(a=>a.due_soon&&!a.missing)].slice(0,6);
+  document.getElementById('priorityList').innerHTML = priority.length ? priority.map(assignCard).join('') : '<div class="empty">Nothing urgent right now.</div>';
+}
+
+function _fillAssignmentsFromIC() {
+  if (all.length || !_ic.connected) return;
+  // Only use the most recent term (Q4 > Q3 > Q2 > Q1)
+  const termOrder   = ['Q4','Q3','Q2','Q1','Final'];
+  const currentTerm = termOrder.find(t => (_ic.grades || []).some(c => c.term === t));
+  if (!currentTerm) return;
+  const now = new Date();
+  const pending = [];
+  (_ic.grades || []).filter(c => c.term === currentTerm).forEach(course => {
+    (course.assignments || []).forEach(a => {
+      if (a.score != null && a.score !== 0 && !a.missing) return; // already graded; 0 = missing
+      const dueDate    = a.due ? new Date(a.due) : null;
+      const hoursUntil = dueDate ? (dueDate - now) / 3600000 : null;
+      pending.push({
+        id:           `ic_${course.section_id}_${a.name}`,
+        name:         a.name,
+        course:       course.name,
+        group:        a.category || '',
+        due:          dueDate ? dueDate.toLocaleDateString('en-US', {month:'short', day:'numeric'}) : null,
+        due_raw:      a.due || null,
+        points:       a.max,
+        missing:      a.missing  || false,
+        due_soon:     hoursUntil !== null && hoursUntil > 0 && hoursUntil <= 48,
+        url:          '',
+        grade_impact: null,
+        quarter:      getQ(a.due),
+        _source:      'ic',
+      });
+    });
+  });
+  if (pending.length) {
+    all = pending;
+    sf  = 'all'; // show everything, not just 'upcoming'
+    renderAssign();
+    renderDash();
+  }
+}
+
+function renderAssign() {
+  if (!all.length) {
+    document.getElementById('assignList').innerHTML =
+      `<div class="empty">No assignments loaded.<br>
+       <span style="font-size:12px;color:var(--text3);margin-top:6px;display:block">
+         Connect Canvas in <span style="color:var(--text2);cursor:pointer;text-decoration:underline"
+         onclick="showPage('settings',document.querySelector('[data-page=settings]'))">Settings</span> to see upcoming assignments.
+       </span></div>`;
+    return;
+  }
+  let list = all;
+  if (qf !== 'all')           list = list.filter(a=>a.quarter===qf);
+  if (sf === 'missing')       list = list.filter(a=>a.missing);
+  else if (sf === 'soon')     list = list.filter(a=>a.due_soon&&!a.missing);
+  else if (sf === 'upcoming') list = list.filter(a=>!a.missing&&!a.due_soon);
+  if (hideNDD) list = list.filter(a=>a.due);
+  document.getElementById('assignList').innerHTML = list.length ? list.map(assignCard).join('') : '<div class="empty">Nothing here.</div>';
+}
+
+function assignCard(a) {
+  const bar   = a.missing ? 'bar-missing' : a.due_soon ? 'bar-soon' : 'bar-upcoming';
+  const badge = a.missing  ? '<span class="assign-badge badge-missing">Missing</span>'
+              : a.due_soon ? '<span class="assign-badge badge-soon">Due soon</span>' : '';
+  const impact = a.grade_impact
+    ? `<div class="grade-impact">
+        <span class="gi-now">Now ${a.grade_impact.current}%</span>
+        <span class="gi-sep">·</span>
+        <span class="gi-submit">Submit → ${a.grade_impact.if_submitted}%</span>
+        <span class="gi-sep">·</span>
+        <span class="gi-miss">Skip → ${a.grade_impact.if_missing}%</span>
+        <span class="gi-sep">·</span>
+        <span class="gi-swing">${a.grade_impact.swing}% swing</span>
+      </div>` : '';
+  const showPredictor = a._source === 'ic' && a.score == null && a.group;
+  const predictor = showPredictor
+    ? `<div class="ap-wrap" onmousedown="event.stopPropagation()" ondragstart="event.preventDefault()" onclick="event.stopPropagation();event.preventDefault()">
+        <div class="ap-row">
+          <span class="ap-label">Predict</span>
+          <input type="range" class="ap-slider" min="0" max="100" value="85"
+            data-course="${a.course.replace(/"/g,'&quot;')}"
+            data-cat="${(a.group||'').replace(/"/g,'&quot;')}"
+            oninput="updateAssignPrediction(this)">
+          <span class="ap-score">85%</span>
+        </div>
+        <span class="ap-result"></span>
+      </div>` : '';
+  return `<a class="assign-card" href="${a.url||'#'}" target="_blank" rel="noopener" draggable="false">
+    <div class="assign-bar ${bar}"></div>
+    <div style="min-width:0;flex:1">
+      <div class="assign-name">${a.name}</div>
+      <div class="assign-course">${a.course}</div>
+      ${badge}${impact}${predictor}
+    </div>
+    <div class="assign-meta">
+      <div class="assign-due">${a.due||'No due date'}</div>
+      <div class="assign-pts">${a.points!=null?a.points+' pts':''}</div>
+    </div>
+  </a>`;
+}
+
+function renderGrades(courseList) {
+  window._courses = courseList;
+
+  const useIC = _ic.connected && _ic.enabled && _ic.grades.length > 0;
+
+  // Banners
+  const icBanner     = document.getElementById('icGradeBanner');
+  const canvasBanner = document.getElementById('canvasGradeBanner');
+  // Quarter filter bar — hide when showing IC (IC has no quarter data)
+  const filterBar    = document.getElementById('gradeFilterBar');
+
+  if (icBanner)     icBanner.style.display     = useIC ? 'flex' : 'none';
+  if (canvasBanner) canvasBanner.style.display  = (!useIC && _ic.connected) ? 'flex' : 'none';
+  if (filterBar)    filterBar.style.display     = 'flex';
+
+  if (useIC) {
+    // Sync time in banner
+    const syncEl = document.getElementById('icGradeSyncTime');
+    if (syncEl && _ic.synced_at) syncEl.textContent = timeAgo(_ic.synced_at);
+
+    // Auto-select current quarter on first IC load
+    if (gqf === 'all') {
+      const termOrder = ['Q4','Q3','Q2','Q1'];
+      const activeTerm = termOrder.find(q => _ic.grades.some(c => c.term === q));
+      if (activeTerm) setGQF(activeTerm);
+    }
+
+    // Show/hide Final button based on whether IC has Final term data
+    const finalBtn = document.getElementById('gqf-Final');
+    if (finalBtn) finalBtn.style.display = _ic.grades.some(c => c.term === 'Final') ? '' : 'none';
+
+    const icFiltered = gqf === 'all' ? _ic.grades : _ic.grades.filter(c => c.term === gqf);
+    window._icFiltered = icFiltered;
+
+    // GPA strip
+    const gpaStrip = document.getElementById('gpaStrip');
+    if (gpaStrip) {
+      const gpa = computeGPA(icFiltered);
+      if (gpa.weighted !== null) {
+        document.getElementById('gpaWeighted').textContent   = gpa.weighted;
+        document.getElementById('gpaUnweighted').textContent = gpa.unweighted;
+        gpaStrip.style.display = 'flex';
+      } else {
+        gpaStrip.style.display = 'none';
+      }
+    }
+
+    document.getElementById('gradeGrid').innerHTML = icFiltered.map(c => {
+      const pct    = Math.round(c.grade);
+      const col    = gradeColor(pct);
+      const letter = c.letter || gradeLetter(pct);
+      return `<div class="grade-card">
+        <div class="grade-source ic">IC</div>
+        <div class="grade-name">${c.name}</div>
+        <div class="grade-pct" style="color:${col}">${pct}<span style="font-size:13px;color:var(--text3);font-weight:400">%</span></div>
+        <div class="grade-letter" style="color:${col}">${letter}</div>
+        <div class="grade-bar-track"><div class="grade-bar-fill" data-w="${pct}" style="background:${col}"></div></div>
+        ${buildTrendline(c.name)}
+      </div>`;
+    }).join('');
+
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      document.querySelectorAll('.grade-bar-fill').forEach(b=>{ b.style.width=b.dataset.w+'%'; });
+      _bindGradeCardClicks();
+    }));
+    return;
+  }
+
+  // Canvas grades
+  const gpaStripEl = document.getElementById('gpaStrip');
+  if (gpaStripEl) gpaStripEl.style.display = 'none';
+  let filtered = courseList.filter(c=>c.grade!=null);
+  if (gqf !== 'all') filtered = filtered.filter(c=>c.quarter===gqf);
+  if (!filtered.length) {
+    document.getElementById('gradeGrid').innerHTML = '<div class="empty">Grade data unavailable. Canvas may require additional permissions.</div>';
+    return;
+  }
+  document.getElementById('gradeGrid').innerHTML = filtered.map(c => {
+    const pct = Math.round(c.grade);
+    const col = gradeColor(pct);
+    return `<div class="grade-card">
+      <div class="grade-source canvas">Canvas</div>
+      <div class="grade-name">${c.name}</div>
+      <div class="grade-pct" style="color:${col}">${pct}<span style="font-size:13px;color:var(--text3);font-weight:400">%</span></div>
+      <div class="grade-letter" style="color:${col}">${gradeLetter(pct)}</div>
+      <div class="grade-bar-track"><div class="grade-bar-fill" data-w="${pct}" style="background:${col}"></div></div>
+    </div>`;
+  }).join('');
+
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.querySelectorAll('.grade-bar-fill').forEach(b=>{ b.style.width=b.dataset.w+'%'; });
+  }));
+}
+
+/* ── Calendar ────────────────────────────────────────── */
+function dateKey(d) {
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function initCalendar() {
+  const now = new Date();
+  calYear = now.getFullYear(); calMonth = now.getMonth(); calSelectedDay = null;
+  renderCalendar();
+}
+function buildDayMap() {
+  const map = {};
+  all.forEach(a => {
+    if (!a.due_raw) return;
+    const k = dateKey(new Date(a.due_raw));
+    (map[k] = map[k] || []).push(a);
+  });
+  return map;
+}
+function renderCalendar() {
+  document.getElementById('calMonthLabel').textContent = MONTHS[calMonth]+' '+calYear;
+  const firstDay = new Date(calYear,calMonth,1).getDay();
+  const days     = new Date(calYear,calMonth+1,0).getDate();
+  const todayKey = dateKey(new Date());
+  const byDay    = buildDayMap();
+  let html = '';
+  for (let i=0;i<firstDay;i++) html += '<div class="cal-day cal-day--empty"></div>';
+  for (let d=1;d<=days;d++) {
+    const k = calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const assigns = byDay[k]||[];
+    const cls = ['cal-day', assigns.length?'cal-day--has':'', k===todayKey?'cal-day--today':'', k===calSelectedDay?'cal-day--selected':''].filter(Boolean).join(' ');
+    let dots = '';
+    if (assigns.some(a=>a.missing))              dots += '<span class="cal-dot dot-red"></span>';
+    if (assigns.some(a=>a.due_soon&&!a.missing)) dots += '<span class="cal-dot dot-orange"></span>';
+    if (assigns.some(a=>!a.missing&&!a.due_soon)) dots += '<span class="cal-dot dot-blue"></span>';
+    html += `<div class="${cls}" onclick="selectCalDay('${k}')"><span class="cal-day-num">${d}</span><div class="cal-dots">${dots}</div></div>`;
+  }
+  document.getElementById('calGrid').innerHTML = html;
+}
+function selectCalDay(key) {
+  calSelectedDay = key;
+  renderCalendar();
+  const [y,m,d] = key.split('-').map(Number);
+  document.getElementById('calDetailHead').textContent = MONTHS[m-1]+' '+d+', '+y;
+  const assigns = (buildDayMap()[key])||[];
+  const el = document.getElementById('calDetail');
+  el.innerHTML = assigns.length
+    ? '<div class="assign-list">'+assigns.map(assignCard).join('')+'</div>'
+    : '<div class="empty">Nothing due this day.</div>';
+}
+function calPrev() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+function calNext() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+
+/* ── Navigation ─────────────────────────────────────── */
+function showPage(page, el) {
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active','page-anim');});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  document.querySelectorAll('.bn-item').forEach(function(n){n.classList.remove('active');});
+  var target = document.getElementById('page-'+page);
+  target.classList.add('active');
+  requestAnimationFrame(function(){target.classList.add('page-anim');});
+  document.querySelectorAll('[data-page="'+page+'"]').forEach(function(n){n.classList.add('active');});
+  if (page === 'calendar') renderCalendar();
+  if (page === 'settings') _applyICStatus();
+}
+
+function setSF(f) { sf=f; ['upcoming','soon','missing','all'].forEach(s=>document.getElementById('sf-'+s)?.classList.toggle('active',s===f)); renderAssign(); }
+function setQF(q) { qf=q; ['all','Q1','Q2','Q3','Q4'].forEach(s=>document.getElementById('qf-'+s)?.classList.toggle('active',s===q)); renderAssign(); }
+function setGQF(q) { gqf=q; ['all','Q1','Q2','Q3','Q4','Final'].forEach(s=>document.getElementById('gqf-'+s)?.classList.toggle('active',s===q)); renderGrades(window._courses||[]); }
+function toggleNDD() { hideNDD=!hideNDD; document.getElementById('nddToggle').classList.toggle('on',hideNDD); renderAssign(); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeDrawer();
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('loginScreen').style.display !== 'none') authLogin();
+});
+
+
+(async () => {
+  const rt = localStorage.getItem('slate_rt');
+  if (!rt) return;
+  try {
+    const res  = await fetch('/api/refresh_token', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({refresh_token: rt}) });
+    const data = await res.json();
+    if (!res.ok) { localStorage.removeItem('slate_rt'); return; }
+    userToken = data.token;
+    if (data.refresh_token) localStorage.setItem('slate_rt', data.refresh_token);
+    await enterApp();
+  } catch { localStorage.removeItem('slate_rt'); }
+})();
+
+/* ── Assignment Drawer ───────────────────────────────── */
+let _drawerOpen = false;
+
+function openDrawer(course) {
+  const pct    = Math.round(course.grade);
+  const col    = gradeColor(pct);
+  const letter = course.letter || gradeLetter(pct);
+
+  document.getElementById('drawerTitle').textContent  = course.name;
+  document.getElementById('drawerMeta').textContent   = course.term ? `Term: ${course.term}` : '';
+  document.getElementById('drawerPct').textContent    = pct + '%';
+  document.getElementById('drawerPct').style.color    = col;
+  document.getElementById('drawerLetter').textContent = letter;
+  document.getElementById('drawerLetter').style.color = col;
+
+  const overlay = document.getElementById('drawerOverlay');
+  const drawer  = document.getElementById('assignDrawer');
+  overlay.classList.add('open');
+  drawer.classList.add('open');
+  _drawerOpen = true;
+
+  renderDrawerAssignments(course);
+}
+
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('assignDrawer').classList.remove('open');
+  _drawerOpen = false;
+}
+
+function renderDrawerAssignments(course) {
+  const body = document.getElementById('drawerBody');
+  window._drawerCourse = course;
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function asgnRow(a) {
+    const hasScore   = a.score !== null && a.score !== undefined;
+    const hasMax     = a.max   !== null && a.max   !== undefined;
+    const pct        = a.pct  != null ? Math.round(parseFloat(a.pct))
+                     : (hasScore && hasMax && parseFloat(a.max) > 0
+                        ? Math.round(parseFloat(a.score) / parseFloat(a.max) * 100) : null);
+    const scoreColor = (a.notGraded || pct == null) ? 'var(--text3)' : gradeColor(pct);
+    const scoreText  = a.notGraded ? 'Ungraded'
+                     : hasScore    ? (hasMax ? `${parseFloat(a.score).toFixed(0)} / ${a.max}` : `${a.score}`)
+                     : '—';
+    const pctText    = (!a.notGraded && pct != null) ? `${pct}%` : '';
+    const badges     = [];
+    if (a.missing)    badges.push('<span class="asgn-badge badge-missing">Missing</span>');
+    if (a.late)       badges.push('<span class="asgn-badge badge-late">Late</span>');
+    if (a.dropped)    badges.push('<span class="asgn-badge badge-dropped">Dropped</span>');
+    if (a.incomplete) badges.push('<span class="asgn-badge badge-dropped">Incomplete</span>');
+    return `<div class="asgn-row">
+      <div style="min-width:0">
+        <div class="asgn-name">${a.name}</div>
+        <div class="asgn-due">${fmtDate(a.due)}${badges.length ? ' &nbsp;' + badges.join(' ') : ''}</div>
+      </div>
+      <div class="asgn-score-wrap">
+        <div class="asgn-score" style="color:${scoreColor}">${scoreText}</div>
+        ${pctText ? `<div class="asgn-max">${pctText}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // Pick categories for the active term
+  const catsByTerm = course.categories_by_term || {};
+  const term = (gqf !== 'all' && catsByTerm[gqf]) ? gqf
+             : ['Q4','Q3','Q2','Q1','Final'].find(t => catsByTerm[t]?.length) || null;
+  const cats = term ? (catsByTerm[term] || []) : [];
+
+  // Fallback: categories_by_term not yet populated — use flat assignments filtered by term dates
+  if (!cats.length) {
+    let flat = course.assignments || [];
+    if (flat.length && gqf !== 'all' && course.term_start && course.term_end) {
+      const s = new Date(course.term_start), e = new Date(course.term_end);
+      flat = flat.filter(a => { if (!a.due) return true; const d = new Date(a.due); return d >= s && d <= e; });
+    }
+    flat = [...flat].sort((a, b) => {
+      if (!a.due && !b.due) return 0; if (!a.due) return 1; if (!b.due) return -1;
+      return new Date(b.due) - new Date(a.due);
+    });
+    if (flat.length) {
+      body.innerHTML = flat.map(a => asgnRow(a)).join('') +
+        `<div style="font-size:11px;color:var(--text3);padding:12px 0 4px">Sync IC to load category weights and grade predictor.</div>`;
+      return;
+    }
+    body.innerHTML = `<div class="drawer-empty">No assignments found for this term.<br>
+      <span style="font-size:11px;color:var(--text3);margin-top:6px;display:block">Sync IC to refresh.</span>
+    </div>`;
+    return;
+  }
+
+  let html = '';
+
+  // Category weight chips
+  if (cats.length) {
+    html += `<div class="cat-weight-bar">`;
+    cats.forEach(c => { html += `<span class="cat-chip">${c.name} <strong>${c.weight}%</strong></span>`; });
+    html += `</div>`;
+  }
+
+  // Assignments grouped by category
+  cats.forEach(cat => {
+    html += `<div class="drawer-section-head">${cat.name} · ${cat.weight}%</div>`;
+    const sorted = [...cat.assignments].sort((a, b) => {
+      if (!a.due && !b.due) return 0;
+      if (!a.due) return 1; if (!b.due) return -1;
+      return new Date(b.due) - new Date(a.due);
+    });
+    if (!sorted.length) {
+      html += `<div class="asgn-empty-cat">No graded assignments yet.</div>`;
+    } else {
+      sorted.forEach(a => { html += asgnRow(a); });
+    }
+  });
+
+  body.innerHTML = html;
+}
+
+// Make IC grade cards open drawer on click
+function _bindGradeCardClicks() {
+  if (!(_ic.connected && _ic.enabled && _ic.grades.length > 0)) return;
+  const list = window._icFiltered || _ic.grades;
+  document.querySelectorAll('#gradeGrid .grade-card').forEach((card, i) => {
+    const course = list[i];
+    if (!course) return;
+    card.onclick = (e) => { e.stopPropagation(); openDrawer(course); };
+  });
+}
+</script>
+</body>
+</html>
