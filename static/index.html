@@ -1725,10 +1725,9 @@ function assignCard(a) {
   var predictor = '';
   if (showPredictor) {
     var daysLate = 0;
-    if (a.missing && a.due) {
-      var dueDate = new Date(a.due);
+    if (a.missing && a.due_raw) {
+      var dueDate = new Date(a.due_raw);
       if (!isNaN(dueDate.getTime())) {
-        // If the parsed date is in the future, it must be from last year
         if (dueDate.getTime() > Date.now()) {
           dueDate.setFullYear(dueDate.getFullYear() - 1);
         }
