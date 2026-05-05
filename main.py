@@ -55,7 +55,7 @@ limiter = Limiter(
 )
 
 Talisman(app,
-    force_https=False,
+    force_https=True,
     strict_transport_security=True,
     session_cookie_secure=True,
     content_security_policy={
