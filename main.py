@@ -969,32 +969,24 @@ def connect_ic():
 
     now_iso = datetime.now(timezone.utc).isoformat()
 
-    # Try update first; if no row exists yet (new user), fall back to insert
-    result = _admin.table('users').update({
+    ic_data = {
         'ic_domain':       ic_domain,
         'ic_username':     username,
         'ic_password':     encrypt_val(password),
         'ic_enabled':      True,
         'ic_grades_cache': grades,
         'ic_synced_at':    now_iso,
-    }).eq('id', uid).select('id').execute()
-    if not result.data:
-        # No existing row — fetch email from auth and create the row
+    }
+    existing = _admin.table('users').select('id').eq('id', uid).execute()
+    if existing.data:
+        _admin.table('users').update(ic_data).eq('id', uid).execute()
+    else:
         try:
             user_info = _admin.auth.admin.get_user_by_id(uid)
             email = user_info.user.email if user_info and user_info.user else None
         except Exception:
             email = None
-        _admin.table('users').insert({
-            'id':              uid,
-            'email':           email,
-            'ic_domain':       ic_domain,
-            'ic_username':     username,
-            'ic_password':     encrypt_val(password),
-            'ic_enabled':      True,
-            'ic_grades_cache': grades,
-            'ic_synced_at':    now_iso,
-        }).execute()
+        _admin.table('users').insert({'id': uid, 'email': email, **ic_data}).execute()
 
     return jsonify({'ok': True, 'grades': grades, 'synced_at': now_iso, 'course_count': len(grades)})
 
