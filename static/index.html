@@ -675,7 +675,8 @@ body {
         <div class="login-sub">Sign in to your account.</div>
         <div class="field">
           <label class="field-label" for="email">Email</label>
-          <input class="field-input" id="email" type="email" placeholder="you@school.edu" autocomplete="email" />
+          <input class="field-input" id="email" type="email" placeholder="you@gmail.com" autocomplete="email" />
+          <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.4">Use a personal email. School emails can't receive outside mail.</div>
         </div>
         <div class="field">
           <label class="field-label" for="password">Password</label>
@@ -948,6 +949,47 @@ body {
               <button class="ic-disconnect-btn" onclick="disconnectIC()">Disconnect</button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Tutorial -->
+      <div class="settings-card">
+        <div class="settings-head tutorial-toggle" onclick="toggleTutorial()" style="cursor:pointer;user-select:none">
+          Setup guide
+          <svg id="tutorialChevron" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform 200ms cubic-bezier(0.23,1,0.32,1)" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div id="tutorialBody" style="display:none">
+
+          <div style="padding:16px 18px 14px;border-bottom:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:12px">Canvas</div>
+
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Finding your domain</div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:12px">Log into Canvas in your browser. The domain is the hostname in the URL bar — everything before the first slash after <span style="font-family:monospace;font-size:11px;color:var(--text2);background:var(--bg3);padding:1px 5px;border-radius:3px">https://</span>. It usually looks like <span style="font-family:monospace;font-size:11px;color:var(--text2);background:var(--bg3);padding:1px 5px;border-radius:3px">school.instructure.com</span>.</div>
+
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Getting an API token</div>
+            <ol style="font-size:12px;color:var(--text3);line-height:1.8;padding-left:18px;margin:0">
+              <li>Click your profile picture in the top-right corner of Canvas.</li>
+              <li>Go to <span style="color:var(--text2)">Settings</span>.</li>
+              <li>Scroll down to <span style="color:var(--text2)">Approved Integrations</span>.</li>
+              <li>Click <span style="color:var(--text2)">New Access Token</span>, give it any purpose, no expiry.</li>
+              <li>Copy the token and paste it into Slate. You will not be able to see it again after closing the dialog.</li>
+            </ol>
+          </div>
+
+          <div style="padding:16px 18px 18px">
+            <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:12px">Infinite Campus</div>
+
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">NCEDCloud credentials</div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:12px">Use the same username and password you use to log into school computers or the NCEDCloud portal at <span style="font-family:monospace;font-size:11px;color:var(--text2);background:var(--bg3);padding:1px 5px;border-radius:3px">ncedcloud.mcnc.org</span>. This is not your Canvas login.</div>
+
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Finding your IC domain</div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:6px">Log into Infinite Campus directly through your school's portal. The domain is the hostname from the URL, for example:</div>
+            <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:0">
+              <span style="font-family:monospace;font-size:11px;color:var(--text2);background:var(--bg3);padding:4px 8px;border-radius:4px;border:1px solid var(--border)">600.ncsis.gov</span>
+              <span style="font-family:monospace;font-size:11px;color:var(--text2);background:var(--bg3);padding:4px 8px;border-radius:4px;border:1px solid var(--border)">district.infinitecampus.org</span>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -1367,6 +1409,15 @@ async function toggleICGrades() {
   } catch (e) { /* silent */ }
 
   renderGrades(window._courses || []);
+}
+
+/* ── Tutorial ───────────────────────────────────────── */
+function toggleTutorial() {
+  var body = document.getElementById('tutorialBody');
+  var chevron = document.getElementById('tutorialChevron');
+  var open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
 }
 
 /* ── Alert prefs ────────────────────────────────────── */
@@ -1860,14 +1911,16 @@ document.addEventListener('keydown', e => {
 (async () => {
   const rt = localStorage.getItem('slate_rt');
   if (!rt) return;
+  let data;
   try {
-    const res  = await fetch('/api/refresh_token', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({refresh_token: rt}) });
-    const data = await res.json();
-    if (!res.ok) { localStorage.removeItem('slate_rt'); return; }
-    userToken = data.token;
-    if (data.refresh_token) localStorage.setItem('slate_rt', data.refresh_token);
-    await enterApp();
-  } catch { localStorage.removeItem('slate_rt'); }
+    const res = await fetch('/api/refresh_token', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({refresh_token: rt}) });
+    data = await res.json();
+    if (res.status === 401) { localStorage.removeItem('slate_rt'); return; } // genuinely invalid — clear it
+    if (!res.ok) return; // server error — keep token, show login
+  } catch(e) { return; } // network error — keep token, show login, don't wipe session
+  userToken = data.token;
+  if (data.refresh_token) localStorage.setItem('slate_rt', data.refresh_token);
+  try { await enterApp(); } catch(e) { /* enterApp crash — don't wipe token */ }
 })();
 
 /* ── Assignment Drawer ───────────────────────────────── */
