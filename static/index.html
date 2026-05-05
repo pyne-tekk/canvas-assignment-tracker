@@ -939,6 +939,33 @@ body {
         </div>
       </div>
 
+      <!-- Email Alerts -->
+      <div class="settings-card" id="alertPrefsCard">
+        <div class="settings-head">Email Alerts</div>
+        <p style="font-size:13px;color:var(--text3);margin:0 0 14px;line-height:1.5">Get notified when Slate detects changes during a sync. All alerts are opt-in.</p>
+        <div class="settings-row">
+          <span class="settings-key">Grade dropped</span>
+          <div class="toggle" id="alertToggleGradeDrop" onclick="toggleAlertPref('grade_drop')"><div class="toggle-thumb"></div></div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-key">Grade improved</span>
+          <div class="toggle" id="alertToggleGradeUp" onclick="toggleAlertPref('grade_up')"><div class="toggle-thumb"></div></div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-key">New assignment</span>
+          <div class="toggle" id="alertToggleNewAsgn" onclick="toggleAlertPref('new_assignment')"><div class="toggle-thumb"></div></div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-key">Missing assignment</span>
+          <div class="toggle" id="alertToggleMissingAsgn" onclick="toggleAlertPref('missing_assignment')"><div class="toggle-thumb"></div></div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-key">GPA change</span>
+          <div class="toggle" id="alertToggleGpaChange" onclick="toggleAlertPref('gpa_change')"><div class="toggle-thumb"></div></div>
+        </div>
+        <div id="alertPrefsSaveStatus" style="font-size:12px;color:var(--text3);margin-top:6px;min-height:16px"></div>
+      </div>
+
       <!-- Academic Calendar -->
       <div class="settings-card">
         <div class="settings-head">Academic Calendar</div>
@@ -1301,6 +1328,58 @@ async function toggleICGrades() {
   } catch (e) { /* silent */ }
 
   renderGrades(window._courses || []);
+}
+
+/* ── Alert prefs ────────────────────────────────────── */
+var _alertPrefs = {};
+var _alertSaveTimer = null;
+
+async function _loadAlertPrefs() {
+  if (!userToken) return;
+  try {
+    var res = await fetch('/api/alert_prefs', { headers: { 'Authorization': 'Bearer ' + userToken } });
+    if (!res.ok) return;
+    var data = await res.json();
+    _alertPrefs = data.prefs || {};
+    _renderAlertToggles();
+  } catch(e) { /* silent */ }
+}
+
+function _renderAlertToggles() {
+  var map = {
+    'grade_drop':         'alertToggleGradeDrop',
+    'grade_up':           'alertToggleGradeUp',
+    'new_assignment':     'alertToggleNewAsgn',
+    'missing_assignment': 'alertToggleMissingAsgn',
+    'gpa_change':         'alertToggleGpaChange',
+  };
+  for (var key in map) {
+    var el = document.getElementById(map[key]);
+    if (!el) continue;
+    el.classList.toggle('on', !!_alertPrefs[key]);
+  }
+}
+
+function toggleAlertPref(key) {
+  _alertPrefs[key] = !_alertPrefs[key];
+  _renderAlertToggles();
+  clearTimeout(_alertSaveTimer);
+  _alertSaveTimer = setTimeout(_saveAlertPrefs, 800);
+}
+
+async function _saveAlertPrefs() {
+  if (!userToken) return;
+  var st = document.getElementById('alertPrefsSaveStatus');
+  try {
+    await fetch('/api/alert_prefs', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + userToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prefs: _alertPrefs }),
+    });
+    if (st) { st.textContent = 'Saved'; setTimeout(function(){ if(st) st.textContent = ''; }, 2000); }
+  } catch(e) {
+    if (st) st.textContent = 'Failed to save';
+  }
 }
 
 /* ── Auth ───────────────────────────────────────────── */
@@ -1720,7 +1799,7 @@ function showPage(page, el) {
   requestAnimationFrame(function(){target.classList.add('page-anim');});
   document.querySelectorAll('[data-page="'+page+'"]').forEach(function(n){n.classList.add('active');});
   if (page === 'calendar') renderCalendar();
-  if (page === 'settings') _applyICStatus();
+  if (page === 'settings') { _applyICStatus(); _loadAlertPrefs(); }
 }
 
 function setSF(f) { sf=f; ['upcoming','soon','missing','all'].forEach(s=>document.getElementById('sf-'+s)?.classList.toggle('active',s===f)); renderAssign(); }
