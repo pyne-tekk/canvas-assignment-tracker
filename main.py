@@ -667,7 +667,7 @@ def sync_user_ic(uid: str, ic_domain: str, ic_username: str, encrypted_pw: str, 
             log.info(f'IC sync OK for {uid[:8]}... ({len(grades)} courses, past quarters refreshed)')
 
         db.table('users').update(db_update).eq('id', uid).execute()
-        send_grade_email(uid, len(grades))
+        send_grade_email(uid, old_grades, grades)
         return grades
     except Exception as e:
         log.warning(f'IC sync failed for user {uid[:8]}...: {e}')
@@ -714,27 +714,222 @@ atexit.register(lambda: scheduler.shutdown(wait=False))
 
 
 # ── Email notifications ────────────────────────────────────────────────────────
-def send_grade_email(uid: str, course_count: int):
-    """Email the user after a successful IC sync. No-ops if Resend isn't configured."""
+def send_grade_email(uid: str, old_grades: list, new_grades: list):
+    """Detect grade changes and email the user a digest. Respects alert_prefs opt-ins."""
     if not (_resend_available and RESEND_API_KEY and _admin):
         return
     try:
+        # ── Fetch user email ──────────────────────────────────────────────────
         user = _admin.auth.admin.get_user_by_id(uid)
         email = user.user.email if user and user.user else None
         if not email:
             return
+
+        # ── Fetch alert prefs (opt-in, all off by default) ────────────────────
+        try:
+            prefs_row = _admin.table('users').select('alert_prefs').eq('id', uid).execute()
+            prefs = (prefs_row.data[0].get('alert_prefs') or {}) if prefs_row.data else {}
+        except Exception:
+            prefs = {}
+
+        want_grade_drop   = bool(prefs.get('grade_drop', False))
+        want_grade_up     = bool(prefs.get('grade_up', False))
+        want_new_asgn     = bool(prefs.get('new_assignment', False))
+        want_missing_asgn = bool(prefs.get('missing_assignment', False))
+        want_gpa_change   = bool(prefs.get('gpa_change', False))
+
+        if not any([want_grade_drop, want_grade_up, want_new_asgn, want_missing_asgn, want_gpa_change]):
+            return
+
+        # ── Build course lookup maps ──────────────────────────────────────────
+        def _course_map(grades):
+            m = {}
+            for c in (grades or []):
+                key = (c.get('name', ''), c.get('term', ''))
+                m[key] = c
+            return m
+
+        old_map = _course_map(old_grades)
+        new_map = _course_map(new_grades)
+
+        changes = {'grade_drop': [], 'grade_up': [], 'new_assignment': [], 'missing_assignment': []}
+        GRADE_THRESHOLD = 0.5  # percent-point noise floor
+
+        for key, new_c in new_map.items():
+            old_c = old_map.get(key)
+            new_g = new_c.get('grade')
+
+            # Course-level grade diff
+            if old_c is not None:
+                old_g = old_c.get('grade')
+                if new_g is not None and old_g is not None:
+                    diff = new_g - old_g
+                    if diff < -GRADE_THRESHOLD:
+                        changes['grade_drop'].append({
+                            'course': new_c.get('name'), 'term': new_c.get('term'),
+                            'old': round(old_g, 1), 'new': round(new_g, 1),
+                            'letter': new_c.get('letter'),
+                        })
+                    elif diff > GRADE_THRESHOLD:
+                        changes['grade_up'].append({
+                            'course': new_c.get('name'), 'term': new_c.get('term'),
+                            'old': round(old_g, 1), 'new': round(new_g, 1),
+                            'letter': new_c.get('letter'),
+                        })
+
+            # Assignment-level diff
+            old_asgns    = old_c.get('assignments', []) if old_c else []
+            old_names    = {a.get('name', '') for a in old_asgns}
+            old_missing  = {a.get('name', '') for a in old_asgns if a.get('missing')}
+
+            for a in new_c.get('assignments', []):
+                aname = a.get('name', '')
+                if not aname:
+                    continue
+                if aname not in old_names:
+                    changes['new_assignment'].append({
+                        'course': new_c.get('name'), 'name': aname, 'due': a.get('due', ''),
+                    })
+                if a.get('missing') and aname not in old_missing:
+                    changes['missing_assignment'].append({
+                        'course': new_c.get('name'), 'name': aname, 'due': a.get('due', ''),
+                    })
+
+        # GPA change — simple average across all courses
+        def _avg(grades):
+            vals = [c.get('grade') for c in (grades or []) if c.get('grade') is not None]
+            return sum(vals) / len(vals) if vals else None
+
+        old_avg = _avg(old_grades)
+        new_avg = _avg(new_grades)
+        gpa_changed = (old_avg is not None and new_avg is not None and abs(new_avg - old_avg) >= 0.05)
+
+        # ── Filter by prefs ───────────────────────────────────────────────────
+        ICONS  = {'grade_drop': '📉', 'grade_up': '📈', 'new_assignment': '📋', 'missing_assignment': '⚠️', 'gpa_change': '🎯'}
+        LABELS = {'grade_drop': 'Grade Dropped', 'grade_up': 'Grade Improved',
+                  'new_assignment': 'New Assignments', 'missing_assignment': 'Missing Assignments',
+                  'gpa_change': 'GPA Change'}
+
+        sections = []
+        if want_grade_drop   and changes['grade_drop']:        sections.append(('grade_drop',         changes['grade_drop']))
+        if want_grade_up     and changes['grade_up']:          sections.append(('grade_up',            changes['grade_up']))
+        if want_new_asgn     and changes['new_assignment']:    sections.append(('new_assignment',      changes['new_assignment']))
+        if want_missing_asgn and changes['missing_assignment']:sections.append(('missing_assignment',  changes['missing_assignment']))
+        if want_gpa_change   and gpa_changed:                  sections.append(('gpa_change',          {'old': round(old_avg, 2), 'new': round(new_avg, 2)}))
+
+        if not sections:
+            return
+
+        # ── Build digest HTML ─────────────────────────────────────────────────
+        section_html = ''
+        for stype, sdata in sections:
+            section_html += (
+                f'<div style="margin-bottom:24px">'
+                f'<h3 style="margin:0 0 10px;font-size:15px;color:#0f0f0f;font-weight:600">'
+                f'{ICONS[stype]} {LABELS[stype]}</h3>'
+            )
+            if stype in ('grade_drop', 'grade_up'):
+                for item in sdata:
+                    arrow = '↓' if stype == 'grade_drop' else '↑'
+                    color = '#dc2626' if stype == 'grade_drop' else '#16a34a'
+                    letter = f' ({item["letter"]})' if item.get('letter') else ''
+                    term   = f'  —  {item["term"]}' if item.get('term') else ''
+                    section_html += (
+                        f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                        f'padding:10px 14px;background:#f9f9f9;border-radius:8px;margin-bottom:6px">'
+                        f'<span style="font-size:14px;color:#333">{item["course"]}{term}</span>'
+                        f'<span style="font-size:14px;font-weight:600;color:{color}">'
+                        f'{arrow} {item["old"]}% → {item["new"]}%{letter}</span></div>'
+                    )
+            elif stype in ('new_assignment', 'missing_assignment'):
+                for item in sdata[:10]:
+                    due = f'Due {item["due"]}' if item.get('due') else ''
+                    section_html += (
+                        f'<div style="padding:10px 14px;background:#f9f9f9;border-radius:8px;margin-bottom:6px">'
+                        f'<div style="font-size:14px;color:#333;font-weight:500">{item["name"]}</div>'
+                        f'<div style="font-size:12px;color:#888;margin-top:2px">{item["course"]}'
+                        f'{"  ·  " + due if due else ""}</div></div>'
+                    )
+                if len(sdata) > 10:
+                    section_html += f'<div style="font-size:12px;color:#aaa;padding:4px 14px">+{len(sdata)-10} more</div>'
+            elif stype == 'gpa_change':
+                arrow = '↑' if sdata['new'] > sdata['old'] else '↓'
+                color = '#16a34a' if sdata['new'] > sdata['old'] else '#dc2626'
+                section_html += (
+                    f'<div style="padding:10px 14px;background:#f9f9f9;border-radius:8px">'
+                    f'<span style="font-size:15px;font-weight:600;color:{color}">'
+                    f'{arrow} {sdata["old"]}% → {sdata["new"]}% avg</span></div>'
+                )
+            section_html += '</div>'
+
+        change_words = [LABELS[s] for s, _ in sections]
+        subject = 'Slate — ' + ', '.join(change_words[:2])
+        if len(change_words) > 2:
+            subject += f' +{len(change_words)-2} more'
+
+        html_body = (
+            '<!DOCTYPE html><html><head><meta charset="utf-8"></head>'
+            '<body style="margin:0;padding:0;background:#f3f3f3;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif">'
+            '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f3f3;padding:32px 0">'
+            '<tr><td align="center"><table width="560" cellpadding="0" cellspacing="0" '
+            'style="background:#fff;border-radius:12px;overflow:hidden;max-width:560px">'
+            '<tr><td style="background:#0f0f0f;padding:24px 32px">'
+            '<span style="color:#fff;font-size:20px;font-weight:700;letter-spacing:-0.5px">Slate</span></td></tr>'
+            '<tr><td style="padding:28px 32px 8px">'
+            '<p style="margin:0 0 24px;font-size:15px;color:#555">Here\'s what changed since your last sync:</p>'
+            + section_html +
+            '<div style="border-top:1px solid #eee;padding-top:20px;margin-top:8px">'
+            '<a href="https://goslate.net/app" style="display:inline-block;background:#0f0f0f;color:#fff;'
+            'text-decoration:none;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:500">'
+            'Open Slate →</a></div></td></tr>'
+            '<tr><td style="padding:20px 32px;background:#fafafa;border-top:1px solid #eee">'
+            '<p style="margin:0;font-size:11px;color:#aaa">You\'re receiving this because you enabled grade alerts in '
+            '<a href="https://goslate.net/app" style="color:#888">Slate Settings</a>.</p></td></tr>'
+            '</table></td></tr></table></body></html>'
+        )
+
         _resend.Emails.send({
-            'from': 'onboarding@resend.dev',
+            'from': 'Slate <noreply@goslate.net>',
             'to': email,
-            'subject': 'Slate — Grades Updated',
-            'html': (
-                f'<p>Your grades were just synced.</p>'
-                f'<p><strong>{course_count} courses</strong> updated.</p>'
-                f'<p><a href="https://slatet.onrender.com">Open Slate</a></p>'
-            ),
+            'subject': subject,
+            'html': html_body,
         })
+        log.info(f'Alert email sent to {uid[:8]}... ({", ".join(s for s, _ in sections)})')
     except Exception as e:
-        log.warning(f'Email failed for {uid[:8]}...: {e}')
+        log.warning(f'Alert email failed for {uid[:8]}...: {e}')
+
+
+# ── Alert prefs endpoints ──────────────────────────────────────────────────────
+@app.route('/api/alert_prefs', methods=['GET'])
+def get_alert_prefs():
+    auth_header = request.headers.get('Authorization', '')
+    try:
+        uid = get_uid(auth_header)
+    except Exception:
+        return jsonify({'error': 'Unauthorized'}), 401
+    try:
+        row = _admin.table('users').select('alert_prefs').eq('id', uid).execute()
+        prefs = (row.data[0].get('alert_prefs') or {}) if row.data else {}
+        return jsonify({'prefs': prefs})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/alert_prefs', methods=['POST'])
+def set_alert_prefs():
+    auth_header = request.headers.get('Authorization', '')
+    try:
+        uid = get_uid(auth_header)
+    except Exception:
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.json or {}
+    prefs = data.get('prefs', {})
+    allowed = {'grade_drop', 'grade_up', 'new_assignment', 'missing_assignment', 'gpa_change'}
+    clean = {k: bool(v) for k, v in prefs.items() if k in allowed}
+    try:
+        _admin.table('users').update({'alert_prefs': clean}).eq('id', uid).execute()
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # ── IC API endpoints ───────────────────────────────────────────────────────────
