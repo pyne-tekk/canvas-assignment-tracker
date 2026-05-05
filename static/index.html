@@ -435,6 +435,12 @@ body {
 .settings-val { color: var(--text); font-weight: 500; }
 .settings-val.ok { color: var(--green); }
 
+.alert-pref-row { display: flex; align-items: center; gap: 12px; padding: 10px 18px; border-radius: 8px; cursor: pointer; transition: background 150ms ease; margin-bottom: 2px; }
+.alert-pref-row:hover { background: oklch(100% 0 0 / .04); }
+.alert-pref-icon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.alert-pref-label { flex: 1; font-size: 13px; color: var(--text); line-height: 1.2; }
+.alert-pref-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
 /* IC connect form inside settings */
 .ic-connect-body { padding: 18px 18px 14px; }
 .ic-connect-desc { font-size: 12.5px; color: var(--text2); line-height: 1.65; margin-bottom: 18px; }
@@ -942,28 +948,53 @@ body {
       <!-- Email Alerts -->
       <div class="settings-card" id="alertPrefsCard">
         <div class="settings-head">Email Alerts</div>
-        <p style="font-size:13px;color:var(--text3);margin:0 0 14px;line-height:1.5">Get notified when Slate detects changes during a sync. All alerts are opt-in.</p>
-        <div class="settings-row">
-          <span class="settings-key">Grade dropped</span>
-          <div class="toggle" id="alertToggleGradeDrop" onclick="toggleAlertPref('grade_drop')"><div class="toggle-thumb"></div></div>
+        <p style="font-size:13px;color:var(--text3);margin:0 0 18px;line-height:1.5">Sent to your account email after each sync. All off by default.</p>
+
+        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Grades</div>
+        <div class="alert-pref-row" onclick="toggleAlertPref('grade_drop')">
+          <div class="alert-pref-icon" style="background:rgba(220,50,50,.12);color:#e05252">📉</div>
+          <div class="alert-pref-label">
+            <div>Grade dropped</div>
+            <div class="alert-pref-sub">Any course falls more than 0.5%</div>
+          </div>
+          <div class="toggle" id="alertToggleGradeDrop"><div class="toggle-thumb"></div></div>
         </div>
-        <div class="settings-row">
-          <span class="settings-key">Grade improved</span>
-          <div class="toggle" id="alertToggleGradeUp" onclick="toggleAlertPref('grade_up')"><div class="toggle-thumb"></div></div>
+        <div class="alert-pref-row" onclick="toggleAlertPref('grade_up')">
+          <div class="alert-pref-icon" style="background:rgba(34,197,94,.12);color:#4ade80">📈</div>
+          <div class="alert-pref-label">
+            <div>Grade improved</div>
+            <div class="alert-pref-sub">Any course rises more than 0.5%</div>
+          </div>
+          <div class="toggle" id="alertToggleGradeUp"><div class="toggle-thumb"></div></div>
         </div>
-        <div class="settings-row">
-          <span class="settings-key">New assignment</span>
-          <div class="toggle" id="alertToggleNewAsgn" onclick="toggleAlertPref('new_assignment')"><div class="toggle-thumb"></div></div>
+        <div class="alert-pref-row" onclick="toggleAlertPref('gpa_change')" style="margin-bottom:18px">
+          <div class="alert-pref-icon" style="background:rgba(99,102,241,.12);color:#818cf8">🎯</div>
+          <div class="alert-pref-label">
+            <div>GPA change</div>
+            <div class="alert-pref-sub">Your average shifts by 0.05% or more</div>
+          </div>
+          <div class="toggle" id="alertToggleGpaChange"><div class="toggle-thumb"></div></div>
         </div>
-        <div class="settings-row">
-          <span class="settings-key">Missing assignment</span>
-          <div class="toggle" id="alertToggleMissingAsgn" onclick="toggleAlertPref('missing_assignment')"><div class="toggle-thumb"></div></div>
+
+        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Assignments</div>
+        <div class="alert-pref-row" onclick="toggleAlertPref('new_assignment')">
+          <div class="alert-pref-icon" style="background:rgba(251,191,36,.12);color:#fbbf24">📋</div>
+          <div class="alert-pref-label">
+            <div>New assignment</div>
+            <div class="alert-pref-sub">A new assignment appears in any course</div>
+          </div>
+          <div class="toggle" id="alertToggleNewAsgn"><div class="toggle-thumb"></div></div>
         </div>
-        <div class="settings-row">
-          <span class="settings-key">GPA change</span>
-          <div class="toggle" id="alertToggleGpaChange" onclick="toggleAlertPref('gpa_change')"><div class="toggle-thumb"></div></div>
+        <div class="alert-pref-row" onclick="toggleAlertPref('missing_assignment')" style="margin-bottom:4px">
+          <div class="alert-pref-icon" style="background:rgba(251,113,36,.12);color:#fb923c">⚠️</div>
+          <div class="alert-pref-label">
+            <div>Missing assignment</div>
+            <div class="alert-pref-sub">IC marks something as missing</div>
+          </div>
+          <div class="toggle" id="alertToggleMissingAsgn"><div class="toggle-thumb"></div></div>
         </div>
-        <div id="alertPrefsSaveStatus" style="font-size:12px;color:var(--text3);margin-top:6px;min-height:16px"></div>
+
+        <div id="alertPrefsSaveStatus" style="font-size:12px;color:var(--text3);margin-top:10px;min-height:16px;text-align:right"></div>
       </div>
 
       <!-- Academic Calendar -->
