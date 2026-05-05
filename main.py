@@ -977,10 +977,17 @@ def connect_ic():
         'ic_enabled':      True,
         'ic_grades_cache': grades,
         'ic_synced_at':    now_iso,
-    }).eq('id', uid).execute()
+    }).eq('id', uid).select('id').execute()
     if not result.data:
+        # No existing row — fetch email from auth and create the row
+        try:
+            user_info = _admin.auth.admin.get_user_by_id(uid)
+            email = user_info.user.email if user_info and user_info.user else None
+        except Exception:
+            email = None
         _admin.table('users').insert({
             'id':              uid,
+            'email':           email,
             'ic_domain':       ic_domain,
             'ic_username':     username,
             'ic_password':     encrypt_val(password),
