@@ -1726,8 +1726,15 @@ function assignCard(a) {
   if (showPredictor) {
     var daysLate = 0;
     if (a.missing && a.due) {
-      var dueMs = new Date(a.due).getTime();
-      if (!isNaN(dueMs)) daysLate = Math.max(0, Math.floor((Date.now() - dueMs) / 86400000));
+      var dueDate = new Date(a.due);
+      if (!isNaN(dueDate.getTime())) {
+        // If the parsed date is in the future, it must be from last year
+        if (dueDate.getTime() > Date.now()) {
+          dueDate.setFullYear(dueDate.getFullYear() - 1);
+        }
+        var raw = Math.floor((Date.now() - dueDate.getTime()) / 86400000);
+        daysLate = (raw >= 0 && raw <= 365) ? raw : 0;
+      }
     }
     var penalty     = Math.min(daysLate * 5, 100);
     var effectiveMax = Math.max(0, 100 - penalty);
