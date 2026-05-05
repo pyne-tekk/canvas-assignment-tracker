@@ -876,8 +876,12 @@ body {
       <div class="page-sub">Connections, integrations, and your academic calendar.</div>
 
       <!-- Canvas -->
-      <div class="settings-card">
-        <div class="settings-head">Canvas Connection</div>
+      <div class="settings-card" style="position:relative">
+        <div class="settings-head" style="color:var(--text3)">Canvas Connection</div>
+        <div style="position:absolute;inset:0;background:var(--bg2);opacity:0.72;border-radius:var(--radius);z-index:2;pointer-events:all"></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:3;pointer-events:none">
+          <span style="font-size:12px;font-weight:600;color:var(--red);letter-spacing:0.2px">Canvas integration is temporarily unavailable</span>
+        </div>
         <div id="canvasConnectForm">
           <div class="ic-connect-body">
             <p class="ic-connect-desc">Connect Canvas to see upcoming assignments, due dates, and grade predictions for assignments not yet in IC.</p>
