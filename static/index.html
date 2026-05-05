@@ -396,8 +396,13 @@ body {
 .ap-row    { display:flex; align-items:center; gap:8px; }
 .ap-label  { font-size:11px; color:var(--text3); white-space:nowrap; }
 .ap-slider { flex:1; min-width:80px; max-width:160px; accent-color:var(--blue); height:3px; cursor:pointer; }
+.ap-slider:disabled { opacity:0.3; cursor:not-allowed; }
 .ap-score  { font-size:12px; font-weight:600; color:var(--text2); min-width:32px; }
 .ap-result { display:block; font-size:12px; font-weight:600; margin-top:4px; min-height:16px; }
+.ap-track-wrap { display:flex; height:3px; border-radius:2px; overflow:hidden; margin-top:5px; max-width:160px; margin-left:auto; margin-right:0; }
+.ap-track-avail { background: var(--blue-dim); transition: width 200ms ease; }
+.ap-track-penalty { background: var(--red-dim); }
+.ap-penalty-note { display:block; font-size:10px; color:var(--red); margin-top:4px; }
 
 /* ─── Settings ────────────────────────────────────────── */
 .settings-card { background: oklch(14% 0.017 252 / 0.65); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; backdrop-filter: blur(4px); }
@@ -1178,12 +1183,13 @@ function gradeColor(p) {
 }
 
 function updateAssignPrediction(slider) {
-  const courseName = slider.dataset.course;
-  const catName    = slider.dataset.cat;
-  const score      = parseInt(slider.value);
-  const scoreEl    = slider.parentElement.querySelector('.ap-score');
-  const resultEl   = slider.parentElement.parentElement.querySelector('.ap-result');
-  if (scoreEl) scoreEl.textContent = score + '%';
+  const courseName   = slider.dataset.course;
+  const catName      = slider.dataset.cat;
+  const score        = parseInt(slider.value);
+  const effectiveMax = parseInt(slider.dataset.effectiveMax || '100');
+  const scoreEl      = slider.parentElement.querySelector('.ap-score');
+  if (scoreEl) scoreEl.textContent = score + '%' + (effectiveMax < 100 ? ' / ' + effectiveMax + '%' : '');
+  const resultEl = slider.parentElement.parentElement.querySelector('.ap-result');
 
   // Find course — prefer matching term, fall back to any with categories loaded
   const allMatches = (_ic.grades || []).filter(c => c.name === courseName);
@@ -1716,18 +1722,41 @@ function assignCard(a) {
         <span class="gi-swing">${a.grade_impact.swing}% swing</span>
       </div>` : '';
   const showPredictor = a._source === 'ic' && a.score == null && a.group;
-  const predictor = showPredictor
-    ? `<div class="ap-wrap" onmousedown="event.stopPropagation()" ondragstart="event.preventDefault()" onclick="event.stopPropagation();event.preventDefault()">
+  var predictor = '';
+  if (showPredictor) {
+    var daysLate = 0;
+    if (a.missing && a.due) {
+      var dueMs = new Date(a.due).getTime();
+      if (!isNaN(dueMs)) daysLate = Math.max(0, Math.floor((Date.now() - dueMs) / 86400000));
+    }
+    var penalty     = Math.min(daysLate * 5, 100);
+    var effectiveMax = Math.max(0, 100 - penalty);
+    var defaultVal  = Math.min(85, effectiveMax);
+    var penaltyNote = daysLate > 0
+      ? `<span class="ap-penalty-note">Max ${effectiveMax}% — ${daysLate} day${daysLate !== 1 ? 's' : ''} late (−${penalty}pts)</span>`
+      : '';
+    var noCreditNote = effectiveMax === 0
+      ? `<span class="ap-penalty-note">No credit available</span>` : '';
+    var trackHtml = daysLate > 0
+      ? `<div class="ap-track-wrap">
+           <div class="ap-track-avail"  style="width:${effectiveMax}%"></div>
+           <div class="ap-track-penalty" style="width:${penalty}%"></div>
+         </div>` : '';
+    predictor = `<div class="ap-wrap" onmousedown="event.stopPropagation()" ondragstart="event.preventDefault()" onclick="event.stopPropagation();event.preventDefault()">
         <div class="ap-row">
           <span class="ap-label">Predict</span>
-          <input type="range" class="ap-slider" min="0" max="100" value="85"
+          <input type="range" class="ap-slider" min="0" max="${effectiveMax}" value="${defaultVal}"
+            ${effectiveMax === 0 ? 'disabled' : ''}
             data-course="${a.course.replace(/"/g,'&quot;')}"
             data-cat="${(a.group||'').replace(/"/g,'&quot;')}"
+            data-effective-max="${effectiveMax}"
             oninput="updateAssignPrediction(this)">
-          <span class="ap-score">85%</span>
+          <span class="ap-score">${effectiveMax === 0 ? '0%' : defaultVal + '%'}</span>
         </div>
+        ${trackHtml}${penaltyNote}${noCreditNote}
         <span class="ap-result"></span>
-      </div>` : '';
+      </div>`;
+  }
   return `<a class="assign-card" href="${a.url||'#'}" target="_blank" rel="noopener" draggable="false">
     <div class="assign-bar ${bar}"></div>
     <div style="min-width:0;flex:1">
