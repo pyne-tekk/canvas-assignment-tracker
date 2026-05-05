@@ -969,14 +969,15 @@ def connect_ic():
 
     now_iso = datetime.now(timezone.utc).isoformat()
 
-    user_db(token).table('users').update({
+    user_db(token).table('users').upsert({
+        'id':              uid,
         'ic_domain':       ic_domain,
         'ic_username':     username,
         'ic_password':     encrypt_val(password),
         'ic_enabled':      True,
         'ic_grades_cache': grades,
         'ic_synced_at':    now_iso,
-    }).eq('id', uid).execute()
+    }).execute()
 
     return jsonify({'ok': True, 'grades': grades, 'synced_at': now_iso, 'course_count': len(grades)})
 
