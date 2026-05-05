@@ -620,9 +620,9 @@ if(localStorage.getItem('slate_rt'))window.location.replace('/app');
         Do everything you wish your school's platform would, with <span class="accent">Slate</span>.
       </h2>
       <div class="cta-row">
-        <button class="slate-btn" id="slate-get-started" data-testid="slate-get-started-btn" type="button">
+        <a class="slate-btn" id="slate-get-started" data-testid="slate-get-started-btn" href="/app">
           Get started free <span class="arrow">&rsaquo;</span>
-        </button>
+        </a>
         <div class="slate-cta-sub" data-testid="cta-subtext">Free for students. 30 seconds to connect.</div>
       </div>
       <div class="slate-proof-row">
@@ -2045,10 +2045,6 @@ requestAnimationFrame(() => requestAnimationFrame(() => { _bg.style.opacity = '1
 })();
 
 
-// CTA button → /app
-document.getElementById('slate-get-started').addEventListener('click', function () {
-  window.location.href = '/app';
-});
 </script>
 
 </body>
