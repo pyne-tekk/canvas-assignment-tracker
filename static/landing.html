@@ -308,16 +308,21 @@ if(localStorage.getItem('slate_rt'))window.location.replace('/app');
     .scroll-hint{ display:none; }
   }
   @media(max-width:400px){
-    .hero-preview-card{ display:none; }
+    .hero-preview-card{ font-size: 11px; }
   }
 
   /* Split layouts */
   .slate-split{ display:grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items:center; width:100%; }
   .slate-split.reverse{ grid-template-columns: .95fr 1.05fr; }
   @media (max-width: 900px){
-    .slate-split, .slate-split.reverse{ grid-template-columns: 1fr; gap: 32px; }
+    .slate-split, .slate-split.reverse{ grid-template-columns: 1fr; gap: 0; }
     .slate-h2.right{ text-align:left; margin-left:0; }
     .slate-lede.right{ text-align:left; margin-left:0; }
+    /* reverse splits: visual col is first in DOM, push it after text on mobile */
+    .slate-split.reverse > [aria-hidden="true"]{ order: 2; min-height: 240px; }
+    .slate-split.reverse > :not([aria-hidden="true"]){ order: 1; }
+    /* regular splits: visual col is second, just give it height */
+    .slate-split:not(.reverse) > [aria-hidden="true"]{ min-height: 240px; }
   }
 
   .slate-h2{ max-width: 18ch; }
@@ -840,7 +845,6 @@ if (ctaHeading) {
 setTimeout(_hideBoot, 650);
 window.addEventListener('load', _hideBoot);
 
-if (!IS_MOBILE) {
 (async () => {
 /* Canvas starts invisible; fades in once WebGL first frame is painted */
 const _bg = document.getElementById('slate-bg');
@@ -2015,10 +2019,6 @@ requestAnimationFrame(tick);
 requestAnimationFrame(() => requestAnimationFrame(() => { _bg.style.opacity = '1'; }));
 
 })(); // end async Three.js IIFE
-} else {
-  // Mobile: no Three.js — hide canvas
-  document.getElementById('slate-bg').style.display = 'none';
-}
 
 /* Custom white-dot cursor */
 (function initCursor(){
