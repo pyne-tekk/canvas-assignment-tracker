@@ -60,33 +60,6 @@ body {
 }
 @media (min-width: 780px) { .login-left { display: flex; } }
 
-@media (max-width: 779px) {
-  #loginScreen { flex-direction: column; }
-
-  .login-left {
-    display: flex;
-    height: 270px;
-    flex-shrink: 0;
-    padding: 24px 28px 26px;
-    justify-content: flex-end;
-    gap: 0;
-  }
-  .login-brand-mark { display: none; }
-  .login-tagline { font-size: 23px; letter-spacing: -0.5px; max-width: 100%; }
-  .login-tagline-sub { font-size: 12px; max-width: 100%; margin-top: 10px; }
-  .login-stack-note { margin-top: 10px; }
-
-  /* Scale grade floats down for mobile viewport */
-  .gf-aplus   { font-size: 40px; padding: 10px 15px; }
-  .gf-100     { font-size: 28px; padding:  9px 13px; }
-  .gf-97      { font-size: 21px; padding:  8px 12px; }
-  .gf-bplus   { font-size: 24px; padding:  9px 13px; }
-  .gf-94      { font-size: 17px; padding:  7px 11px; }
-  .gf-a-ghost { font-size: 68px; padding:  5px 10px; }
-
-  .login-right { padding: 28px 24px 48px; }
-}
-
 .login-left::before {
   content: '';
   position: absolute;
