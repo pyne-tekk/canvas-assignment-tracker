@@ -60,6 +60,33 @@ body {
 }
 @media (min-width: 780px) { .login-left { display: flex; } }
 
+@media (max-width: 779px) {
+  #loginScreen { flex-direction: column; }
+
+  .login-left {
+    display: flex;
+    height: 270px;
+    flex-shrink: 0;
+    padding: 24px 28px 26px;
+    justify-content: flex-end;
+    gap: 0;
+  }
+  .login-brand-mark { display: none; }
+  .login-tagline { font-size: 23px; letter-spacing: -0.5px; max-width: 100%; }
+  .login-tagline-sub { font-size: 12px; max-width: 100%; margin-top: 10px; }
+  .login-stack-note { margin-top: 10px; }
+
+  /* Scale grade floats down for mobile viewport */
+  .gf-aplus   { font-size: 40px; padding: 10px 15px; }
+  .gf-100     { font-size: 28px; padding:  9px 13px; }
+  .gf-97      { font-size: 21px; padding:  8px 12px; }
+  .gf-bplus   { font-size: 24px; padding:  9px 13px; }
+  .gf-94      { font-size: 17px; padding:  7px 11px; }
+  .gf-a-ghost { font-size: 68px; padding:  5px 10px; }
+
+  .login-right { padding: 28px 24px 48px; }
+}
+
 .login-left::before {
   content: '';
   position: absolute;
@@ -601,6 +628,15 @@ body {
 /* ─── Misc ────────────────────────────────────────────── */
 .empty { padding: 48px 24px; text-align: center; color: var(--text3); font-size: 13px; }
 
+/* ─── Onboard CTA ─────────────────────────────────────── */
+.onboard-cta { display:none; flex-direction:column; align-items:center; justify-content:center; padding:72px 24px 56px; text-align:center; gap:14px; }
+.onboard-cta-icon { width:48px; height:48px; border-radius:14px; background:oklch(28% 0.01 250); display:flex; align-items:center; justify-content:center; color:var(--blue); flex-shrink:0; }
+.onboard-cta-head { font-size:20px; font-weight:600; color:var(--text1); letter-spacing:-0.4px; margin-top:2px; }
+.onboard-cta-sub { font-size:13px; color:var(--text3); line-height:1.65; max-width:260px; }
+.onboard-cta-btn { margin-top:10px; padding:10px 22px; border-radius:8px; background:var(--blue); color:oklch(98% 0.005 250); font-size:13px; font-weight:500; border:none; cursor:pointer; transition:opacity 140ms ease-out; letter-spacing:0.01em; }
+.onboard-cta-btn:hover { opacity:0.82; }
+.onboard-cta-btn:active { opacity:0.7; transform:scale(0.97); }
+
 /* Grade cards: clickable */
 .grade-card { cursor: pointer; }
 .grade-card:active { transform: scale(0.985); transition: transform 100ms; }
@@ -778,8 +814,16 @@ body {
         <div class="stat-cell c-red">    <div class="stat-num c-red"    id="sMissing">—</div>  <div class="stat-lbl">Missing</div></div>
         <div class="stat-cell c-dim">    <div class="stat-num"          id="sTotal">—</div>    <div class="stat-lbl">Total</div></div>
       </div>
-      <div class="section-head">Priority right now</div>
+      <div class="section-head" id="prioritySectionHead">Priority right now</div>
       <div class="assign-list" id="priorityList"></div>
+      <div class="onboard-cta" id="onboardCta">
+        <div class="onboard-cta-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </div>
+        <div class="onboard-cta-head">Nothing linked yet</div>
+        <div class="onboard-cta-sub">Connect your school portal in Settings to see your assignments and grades here.</div>
+        <button class="onboard-cta-btn" onclick="showPage('settings')">Go to Settings</button>
+      </div>
     </div>
 
     <!-- Assignments -->
@@ -1642,12 +1686,31 @@ function renderDash() {
   document.getElementById('dashGreeting').textContent = greeting();
   document.getElementById('dashDesc').textContent     = buildDesc(missing, soon);
   document.getElementById('streakNum').textContent    = '0';
+
+  const notLinked = !_ic.connected;
+  const cta       = document.getElementById('onboardCta');
+  const statStrip = document.querySelector('#page-dashboard .stat-strip');
+  const secHead   = document.getElementById('prioritySectionHead');
+  const pList     = document.getElementById('priorityList');
+
+  if (notLinked) {
+    cta.style.display       = 'flex';
+    statStrip.style.display = 'none';
+    secHead.style.display   = 'none';
+    pList.style.display     = 'none';
+    return;
+  }
+  cta.style.display       = 'none';
+  statStrip.style.display = '';
+  secHead.style.display   = '';
+  pList.style.display     = '';
+
   countUp(document.getElementById('sUpcoming'), upcoming, 420);
   countUp(document.getElementById('sSoon'),     soon,     420);
   countUp(document.getElementById('sMissing'),  missing,  420);
   countUp(document.getElementById('sTotal'),    all.length, 480);
   const priority = [...all.filter(a=>a.missing),...all.filter(a=>a.due_soon&&!a.missing)].slice(0,6);
-  document.getElementById('priorityList').innerHTML = priority.length ? priority.map(assignCard).join('') : '<div class="empty">Nothing urgent right now.</div>';
+  pList.innerHTML = priority.length ? priority.map(assignCard).join('') : '<div class="empty">Nothing urgent right now.</div>';
 }
 
 function _fillAssignmentsFromIC() {
