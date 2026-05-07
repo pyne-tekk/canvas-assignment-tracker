@@ -982,6 +982,7 @@ body {
         </div>
         <aside class="planner-panel">
           <div class="pp-head">Your Schedule</div>
+          <div class="pp-field"><label for="pgSchoolTime">School starts</label><input type="time" class="pg-time-input" id="pgSchoolTime" value="08:00" /></div>
           <div class="pp-field"><label for="pgHomeTime">Home from school</label><input type="time" class="pg-time-input" id="pgHomeTime" value="15:30" /></div>
           <div class="pp-field"><label for="pgBedTime">Bedtime</label><input type="time" class="pg-time-input" id="pgBedTime" value="22:00" /></div>
           <div class="pp-divider"></div>
@@ -2268,6 +2269,7 @@ async function saveStudyPrefs(prefs) {
 }
 
 async function savePlannerSettings() {
+  var st = document.getElementById('pgSchoolTime').value;
   var ht = document.getElementById('pgHomeTime').value;
   var bt = document.getElementById('pgBedTime').value;
   if (!ht || !bt) return;
@@ -2278,7 +2280,7 @@ async function savePlannerSettings() {
     proj_mins: +(document.getElementById('pgTProj').value)  || 90,
     proj_n:    +(document.getElementById('pgTProjN').value) || 3
   };
-  var prefs = {home_time:ht, bed_time:bt, times:times, overrides:(_studyPrefs&&_studyPrefs.overrides)||{}};
+  var prefs = {school_time:st||'08:00', home_time:ht, bed_time:bt, times:times, overrides:(_studyPrefs&&_studyPrefs.overrides)||{}};
   var btn = document.getElementById('pgSaveBtn');
   var st  = document.getElementById('pgSaveStatus');
   btn.disabled=true; btn.textContent='Saving…'; if(st) st.textContent='';
@@ -2297,6 +2299,7 @@ function renderPlanner() {
   var overlay = document.getElementById('pgOverlay');
   if (overlay) overlay.style.display = _studyPrefs ? 'none' : '';
   if (_studyPrefs) {
+    var sc = document.getElementById('pgSchoolTime'); if(sc) sc.value = _studyPrefs.school_time || '08:00';
     var ht = document.getElementById('pgHomeTime'); if(ht) ht.value = _studyPrefs.home_time || '15:30';
     var bt = document.getElementById('pgBedTime');  if(bt) bt.value = _studyPrefs.bed_time  || '22:00';
     var t  = _studyPrefs.times || {};
@@ -2329,8 +2332,8 @@ function pgType(a) {
   return                                                             {mins:t.hw||30,         style:'once',   tag:'HW'};
 }
 function pgSlot(day, dur) {
-  var cur=day.home, used=day.used.slice().sort(function(a,b){return a.s-b.s;});
-  for(var i=0;i<used.length;i++){if(cur+dur<=used[i].s)return{s:cur,e:cur+dur};if(used[i].e>cur)cur=used[i].e;}
+  var GAP=30, cur=day.home, used=day.used.slice().sort(function(a,b){return a.s-b.s;});
+  for(var i=0;i<used.length;i++){if(cur+dur<=used[i].s)return{s:cur,e:cur+dur};if(used[i].e+GAP>cur)cur=used[i].e+GAP;}
   return cur+dur<=day.bed ? {s:cur,e:cur+dur} : null;
 }
 
@@ -2379,9 +2382,10 @@ function renderPlannerGrid(blocks) {
   if(wLbl) wLbl.textContent=wStart.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+wEnd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   var head=document.getElementById('pgHead'); if(head) head.innerHTML='';
 
-  var homeM=pgT2M((_studyPrefs&&_studyPrefs.home_time)||'15:30');
-  var bedM =pgT2M((_studyPrefs&&_studyPrefs.bed_time) ||'22:00');
-  var days =['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var schoolM=pgT2M((_studyPrefs&&_studyPrefs.school_time)||'08:00');
+  var homeM  =pgT2M((_studyPrefs&&_studyPrefs.home_time) ||'15:30');
+  var bedM   =pgT2M((_studyPrefs&&_studyPrefs.bed_time)  ||'22:00');
+  var days   =['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
   var html='<div class="pg-week-grid">';
   for(var i=0;i<7;i++){
@@ -2394,7 +2398,7 @@ function renderPlannerGrid(blocks) {
     html+='<div class="pg-card-head"><span class="pg-card-dayname">'+days[i]+'</span><span class="pg-card-daynum">'+d.getDate()+'</span></div>';
     // School (weekdays only)
     if(dow!==0&&dow!==6){
-      html+='<div class="pg-item school"><span class="pg-item-time">8:00am – '+pgM2S(homeM)+'</span><span class="pg-item-label">School</span></div>';
+      html+='<div class="pg-item school"><span class="pg-item-time">'+pgM2S(schoolM)+' – '+pgM2S(homeM)+'</span><span class="pg-item-label">School</span></div>';
     }
     // Study blocks
     var dayBlocks=blocks.filter(function(b){return b.date===dk;}).sort(function(a,b){return a.s-b.s;});
