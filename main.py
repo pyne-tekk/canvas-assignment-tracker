@@ -47,6 +47,10 @@ def user_db(token: str):
 app = Flask(__name__, static_folder='static')
 CORS(app)
 
+CACHE_FRESH  = 5  * 60   # < 5 min  → return instantly, no refetch
+CACHE_STALE  = 30 * 60   # 5-30 min → return instantly + bg refresh
+                          # > 30 min → fetch fresh, block once
+
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -1302,6 +1306,29 @@ def index():
     return resp
 
 
+def _cache_get(uid):
+    """Return (data, age_seconds) from Supabase cache, or (None, None)."""
+    try:
+        row = _admin.table('users').select('canvas_cache,canvas_cache_ts').eq('id', uid).execute()
+        if not row.data or not row.data[0].get('canvas_cache'):
+            return None, None
+        ts = row.data[0].get('canvas_cache_ts')
+        if not ts:
+            return None, None
+        age = (datetime.now(timezone.utc) - datetime.fromisoformat(ts.replace('Z', '+00:00'))).total_seconds()
+        return row.data[0]['canvas_cache'], age
+    except Exception:
+        return None, None
+
+def _cache_save(uid, data):
+    """Write result to Supabase cache (called in bg thread — swallows errors)."""
+    try:
+        now = datetime.now(timezone.utc).isoformat()
+        _admin.table('users').update({'canvas_cache': data, 'canvas_cache_ts': now}).eq('id', uid).execute()
+    except Exception:
+        pass
+
+
 @app.route("/api/assignments", methods=["POST"])
 def get_assignments():
     body   = request.json
@@ -1310,6 +1337,25 @@ def get_assignments():
 
     if not domain or not token:
         return jsonify({"error": "Domain and token required"}), 400
+
+    # ── Cache lookup ───────────────────────────────────────
+    uid = None
+    try:
+        uid = get_uid(request.headers.get('Authorization', ''))
+    except Exception:
+        pass
+
+    if uid:
+        cached, age = _cache_get(uid)
+        if cached is not None:
+            if age < CACHE_FRESH:
+                return jsonify(cached)                          # instant
+            if age < CACHE_STALE:
+                # return stale immediately, refresh in background
+                threading.Thread(target=_bg_canvas_refresh,
+                                 args=(uid, domain, token),
+                                 daemon=True).start()
+                return jsonify({**cached, '_cached': True})    # instant
 
     try:
         courses = canvas_get(domain, token, "/courses", {
@@ -1403,11 +1449,14 @@ def get_assignments():
                 "source":  "canvas",
             })
 
-        return jsonify({
-            "assignments":   assignments,
-            "course_count":  len(courses),
-            "courses":       course_data,
-        })
+        result = {
+            "assignments":  assignments,
+            "course_count": len(courses),
+            "courses":      course_data,
+        }
+        if uid:
+            threading.Thread(target=_cache_save, args=(uid, result), daemon=True).start()
+        return jsonify(result)
 
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 401:
@@ -1415,6 +1464,77 @@ def get_assignments():
         return jsonify({"error": f"Canvas API error: {e.response.status_code}"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+def _bg_canvas_refresh(uid, domain, token):
+    """Fetch fresh Canvas data in background and update cache. Called from daemon thread."""
+    try:
+        with app.app_context():
+            from flask import Request
+            import werkzeug.test
+            env = werkzeug.test.EnvironBuilder(
+                method='POST', path='/api/assignments',
+                json={'domain': domain, 'token': token}
+            ).get_environ()
+            # Build minimal request context and call fetch logic directly
+            # Simpler: just re-run the core fetch and save
+            import requests as _req
+            def _cget(ep, params={}):
+                results, url = [], f'https://{domain}/api/v1{ep}'
+                headers = {'Authorization': f'Bearer {token}'}
+                while url:
+                    r = _req.get(url, headers=headers, params=params, timeout=20)
+                    r.raise_for_status()
+                    data = r.json()
+                    if isinstance(data, list): results.extend(data)
+                    else: return data
+                    url = r.links.get('next', {}).get('url'); params = {}
+                return results
+            courses = _cget('/courses', {'enrollment_state':'active','include[]':['total_scores','current_grading_period_scores'],'per_page':50})
+            courses = [c for c in courses if 'name' in c and not c.get('access_restricted_by_date')]
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            assignments, course_data = [], []
+            for course in courses:
+                cid, cname = course['id'], course['name']
+                subs = _cget(f'/courses/{cid}/students/submissions', {'student_ids[]':'self','include[]':'assignment','per_page':100})
+                groups = _cget(f'/courses/{cid}/assignment_groups', {'per_page':50,'include[]':'assignments'})
+                total_weight = sum(g.get('group_weight',0) for g in groups)
+                default_weights = {'perform':50,'rehearse':30,'prepare':20}
+                for g in groups:
+                    if total_weight == 0:
+                        name = g['name'].lower()
+                        g['group_weight'] = next((w for k,w in default_weights.items() if k in name),0)
+                group_scores = {}
+                for s in subs:
+                    if s.get('score') is None: continue
+                    for g in groups:
+                        if any(a['id']==s['assignment_id'] for a in g.get('assignments',[])):
+                            gid = g['id']
+                            if gid not in group_scores: group_scores[gid]={'earned':0,'possible':0,'weight':g['group_weight']}
+                            group_scores[gid]['earned']   += s['score']
+                            group_scores[gid]['possible'] += (s['assignment']['points_possible'] if s.get('assignment') and s['assignment'].get('points_possible') else 0)
+                for bucket, missing_only in [('future',False),('past',True)]:
+                    try:
+                        items = _cget(f'/courses/{cid}/assignments', {'per_page':100,'bucket':bucket,'order_by':'due_at'})
+                        for a in items:
+                            if missing_only and not a.get('is_missing_submission'): continue
+                            if not any(x['id']==a['id'] for x in assignments):
+                                gid = a.get('assignment_group_id')
+                                gname = next((g['name'] for g in groups if g['id']==gid),None)
+                                assignments.append(format_assignment(a,cname,now,group_id=gid,group_name=gname,group_scores=group_scores))
+                    except Exception: pass
+                enrollments = course.get('enrollments') or []
+                grade = None
+                if enrollments:
+                    e = enrollments[0]
+                    grade = e.get('override_score') if e.get('override_score') is not None else e.get('computed_current_score')
+                course_data.append({'id':course['id'],'name':cname,'grade':grade,'quarter':get_quarter(),'source':'canvas'})
+            assignments.sort(key=lambda a:(0 if a['missing'] else 1, a['due_raw'] or '9999'))
+            result = {'assignments':assignments,'course_count':len(courses),'courses':course_data}
+            _cache_save(uid, result)
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":
