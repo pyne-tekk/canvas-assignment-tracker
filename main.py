@@ -964,7 +964,7 @@ def set_study_prefs():
         return jsonify({'error': 'Unauthorized'}), 401
     data = request.json or {}
     prefs = data.get('prefs', {})
-    allowed = {'home_time', 'bed_time', 'overrides'}
+    allowed = {'home_time', 'bed_time', 'overrides', 'times'}
     clean = {k: v for k, v in prefs.items() if k in allowed}
     try:
         existing = _admin.table('users').select('id').eq('id', uid).execute()
