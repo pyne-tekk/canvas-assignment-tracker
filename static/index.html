@@ -1652,6 +1652,7 @@ async function enterApp() {
   renderDash();
   initCalendar();
   loadSavedCanvas(); // silent background — does not block app entry
+  loadStudyPrefs(); // warm planner prefs in background so tab is instant
   if (_ic.connected) syncICNow(true); // auto-sync on login, silent — never clobber IC state on failure
 }
 
@@ -1681,7 +1682,7 @@ async function connectCanvas() {
 
 async function _applyCanvasCreds(domain, token, save) {
   try {
-    const res  = await fetch('/api/assignments', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({domain,token}) });
+    const res  = await fetch('/api/assignments', { method:'POST', headers:{'Content-Type':'application/json', ...(userToken ? {'Authorization':'Bearer '+userToken} : {})}, body:JSON.stringify({domain,token}) });
     const data = await res.json();
     if (!res.ok) return false;
     all = data.assignments.map(a => ({...a, quarter: getQ(a.due_raw)}));
@@ -2077,7 +2078,10 @@ function showPage(page, el) {
   document.querySelectorAll('[data-page="'+page+'"]').forEach(function(n){n.classList.add('active');});
   if (page === 'calendar') renderCalendar();
   if (page === 'settings') { _applyICStatus(); _loadAlertPrefs(); }
-  if (page === 'planner')  { if (!_studyPrefsLoaded) loadStudyPrefs().then(renderPlanner); else renderPlanner(); }
+  if (page === 'planner')  {
+    var _doRender = function() { requestAnimationFrame(renderPlanner); };
+    if (!_studyPrefsLoaded) loadStudyPrefs().then(_doRender); else _doRender();
+  }
 }
 
 function setSF(f) { sf=f; ['upcoming','soon','missing','all'].forEach(s=>document.getElementById('sf-'+s)?.classList.toggle('active',s===f)); renderAssign(); }
