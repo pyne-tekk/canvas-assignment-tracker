@@ -926,7 +926,57 @@ def set_alert_prefs():
     allowed = {'grade_drop', 'grade_up', 'new_assignment', 'missing_assignment', 'gpa_change'}
     clean = {k: bool(v) for k, v in prefs.items() if k in allowed}
     try:
-        _admin.table('users').update({'alert_prefs': clean}).eq('id', uid).execute()
+        existing = _admin.table('users').select('id').eq('id', uid).execute()
+        if existing.data:
+            _admin.table('users').update({'alert_prefs': clean}).eq('id', uid).execute()
+        else:
+            try:
+                user_info = _admin.auth.admin.get_user_by_id(uid)
+                email = user_info.user.email if user_info and user_info.user else None
+            except Exception:
+                email = None
+            _admin.table('users').insert({'id': uid, 'email': email, 'alert_prefs': clean}).execute()
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/study_prefs', methods=['GET'])
+def get_study_prefs():
+    auth_header = request.headers.get('Authorization', '')
+    try:
+        uid = get_uid(auth_header)
+    except Exception:
+        return jsonify({'error': 'Unauthorized'}), 401
+    try:
+        row = _admin.table('users').select('study_prefs').eq('id', uid).execute()
+        prefs = (row.data[0].get('study_prefs') or None) if row.data else None
+        return jsonify({'prefs': prefs})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/study_prefs', methods=['POST'])
+def set_study_prefs():
+    auth_header = request.headers.get('Authorization', '')
+    try:
+        uid = get_uid(auth_header)
+    except Exception:
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.json or {}
+    prefs = data.get('prefs', {})
+    allowed = {'home_time', 'bed_time', 'overrides'}
+    clean = {k: v for k, v in prefs.items() if k in allowed}
+    try:
+        existing = _admin.table('users').select('id').eq('id', uid).execute()
+        if existing.data:
+            _admin.table('users').update({'study_prefs': clean}).eq('id', uid).execute()
+        else:
+            try:
+                user_info = _admin.auth.admin.get_user_by_id(uid)
+                email = user_info.user.email if user_info and user_info.user else None
+            except Exception:
+                email = None
+            _admin.table('users').insert({'id': uid, 'email': email, 'study_prefs': clean}).execute()
         return jsonify({'ok': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
